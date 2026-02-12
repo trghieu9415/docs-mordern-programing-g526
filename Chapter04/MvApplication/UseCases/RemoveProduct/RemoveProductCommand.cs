@@ -1,5 +1,5 @@
-﻿namespace MvApplication.UseCases.RemoveProduct;
+﻿using MediatR;
 
-public class RemoveProductCommand {
-  public RemoveProductCommand() {}
-}
+namespace MvApplication.UseCases.RemoveProduct;
+
+public record RemoveProductCommand(Guid Id) : IRequest<Unit>;

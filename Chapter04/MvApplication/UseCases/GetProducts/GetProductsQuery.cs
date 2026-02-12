@@ -1,5 +1,5 @@
-﻿namespace MvApplication.UseCases.GetProducts;
+﻿using MediatR;
 
-public class GetProductsQuery {
-  
-}
+namespace MvApplication.UseCases.GetProducts;
+
+public record GetProductsQuery(int Page = 1, int PageSize = 10) : IRequest<GetProductsResult>;

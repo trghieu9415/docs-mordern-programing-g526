@@ -1,5 +1,5 @@
-﻿namespace MvApplication.UseCases.UpdateProduct;
+﻿using MediatR;
 
-public class UpdateProductCommand {
-  
-}
+namespace MvApplication.UseCases.UpdateProduct;
+
+public record UpdateProductCommand(Guid Id, string Name, decimal Price, string? ImageUrl) : IRequest<Unit>;

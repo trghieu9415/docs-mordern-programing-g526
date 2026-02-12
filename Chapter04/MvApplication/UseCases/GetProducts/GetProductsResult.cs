@@ -1,5 +1,6 @@
-﻿namespace MvApplication.UseCases.GetProducts;
+﻿using MvApplication.DTOs;
+using MvApplication.Models;
 
-public class GetProductsResult {
-  
-}
+namespace MvApplication.UseCases.GetProducts;
+
+public record GetProductsResult(IList<ProductDto> Products, Meta Meta);

@@ -1,18 +1,22 @@
 ﻿namespace MvDomain.Entities;
 
 public class Product {
-  public Guid Id { get; set; }
-  public string Name { get; set; } = null!;
-  public decimal Price { get; set; }
-  public int Stock { get; set; }
-  public string? ImageUrl { get; set; }
-  
-  public static Product Create(string name, decimal price, string? imageUrl) => new Product {
-    Name = name,
-    Price = price,
-    Stock = 0,
-    ImageUrl = imageUrl
-  };
+  private Product() {}
+  public Guid Id { get; private set; }
+  public string Name { get; private set; } = null!;
+  public decimal Price { get; private set; }
+  public int Stock { get; private set; }
+  public string? ImageUrl { get; private set; }
+
+  public static Product Create(string name, decimal price, string? imageUrl) {
+    return new Product {
+      Id = Guid.NewGuid(),
+      Name = name,
+      Price = price,
+      Stock = 0,
+      ImageUrl = imageUrl
+    };
+  }
 
   public Product Update(string name, decimal price, string? imageUrl) {
     Name = name;
@@ -21,8 +25,12 @@ public class Product {
     return this;
   }
 
-  public Product UpdateStock(int stock) {
-    Stock = stock;
+  public Product UpdateStock(int quantity) {
+    if (Stock + quantity < 0) {
+      throw new InvalidOperationException("Số lượng tồn kho không thể âm.");
+    }
+
+    Stock += quantity;
     return this;
   }
 }

@@ -1,9 +1,12 @@
 ﻿using FluentValidation;
 
-namespace MvApplication.UseCases.CreateProduct;
+namespace MvApplication.UseCases.UpdateProduct;
 
-public class CreateProductValidator : AbstractValidator<CreateProductCommand> {
-  public CreateProductValidator() {
+public class UpdateProductValidator : AbstractValidator<UpdateProductCommand> {
+  public UpdateProductValidator() {
+    RuleFor(x => x.Id)
+      .NotEmpty().WithMessage("ID sản phẩm là bắt buộc.");
+
     RuleFor(x => x.Name)
       .NotEmpty().WithMessage("Tên sản phẩm không được để trống.")
       .MinimumLength(3).WithMessage("Tên sản phẩm phải có ít nhất 3 ký tự.")

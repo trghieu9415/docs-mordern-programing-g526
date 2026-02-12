@@ -1,5 +1,9 @@
-﻿namespace MvApplication.UseCases.CreateProduct;
+﻿using MediatR;
 
-public class CreateProductCommand {
-  
-}
+namespace MvApplication.UseCases.CreateProduct;
+
+public record CreateProductCommand(
+  string Name,
+  decimal Price,
+  string? ImageUrl
+) : IRequest<Guid>;

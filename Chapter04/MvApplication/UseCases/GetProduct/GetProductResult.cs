@@ -1,5 +1,5 @@
-﻿namespace MvApplication.UseCases.GetProduct;
+﻿using MvApplication.DTOs;
 
-public class GetProductResult {
-  
-}
+namespace MvApplication.UseCases.GetProduct;
+
+public record GetProductResult(ProductDto Product);

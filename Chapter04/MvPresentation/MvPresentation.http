@@ -1,6 +1,0 @@
-@MvPresentation_HostAddress = http://localhost:5273
-
-GET {{MvPresentation_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MvApplication", "MvApplication\MvApplication.csproj", "{6128B9FD-409A-4E93-8F8B-F70E93F87014}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MvCore", "MvCore\MvCore.csproj", "{A65D7CE3-1E65-44C9-B9E9-F06AD998FEDA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MvDomain", "MvDomain\MvDomain.csproj", "{A65D7CE3-1E65-44C9-B9E9-F06AD998FEDA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MvInfrastructure", "MvInfrastructure\MvInfrastructure.csproj", "{E5B7F6F4-DC9D-4AD2-B617-C2855C0B9A77}"
 EndProject

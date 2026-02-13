@@ -1,17 +1,16 @@
 ﻿using MediatR;
+using MvApplication.Exceptions;
 using MvApplication.Ports;
 
 namespace MvApplication.UseCases.RemoveProduct;
 
-public class RemoveProductHandler(IProductManager manager) : IRequestHandler<RemoveProductCommand, Unit> {
+public class RemoveProductHandler(IProductManager productManager) : IRequestHandler<RemoveProductCommand, Unit> {
   public async Task<Unit> Handle(RemoveProductCommand request, CancellationToken ct) {
-    var product = await manager.GetByIdAsync(request.Id, ct);
+    var product =
+      await productManager.GetByIdAsync(request.Id, ct)
+      ?? throw new AppException($"Không tìm thấy sản phẩm ID: {request.Id}", 404);
 
-    if (product == null) {
-      throw new KeyNotFoundException($"Không tìm thấy sản phẩm ID: {request.Id}");
-    }
-
-    await manager.DeleteAsync(request.Id, ct);
+    await productManager.DeleteAsync(request.Id, ct);
     return Unit.Value;
   }
 }

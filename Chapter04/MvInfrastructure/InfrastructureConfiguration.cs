@@ -13,6 +13,8 @@ namespace MvInfrastructure;
 
 public static class InfrastructureConfiguration {
   public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config) {
+    services.AddApplication();
+
     services.AddOptions<ProductOptions>()
       .Bind(config.GetSection(ProductOptions.SectionName))
       .ValidateDataAnnotations()
@@ -26,6 +28,7 @@ public static class InfrastructureConfiguration {
     services.AddScoped<IProductManager, ProductManager>();
 
     services.AddSingleton<ProductStore>();
+
     return services;
   }
 

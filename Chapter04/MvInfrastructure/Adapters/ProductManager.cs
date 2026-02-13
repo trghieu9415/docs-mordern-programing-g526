@@ -9,10 +9,6 @@ public class ProductManager(ProductStore store) : IProductManager {
     return await Task.FromResult(store.Products.FirstOrDefault(p => p.Id == id));
   }
 
-  public async Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct) {
-    return await Task.FromResult(store.Products.AsEnumerable());
-  }
-
   public async Task<(IList<Product> Products, int Total)> GetPagedAsync(int page, int pageSize, CancellationToken ct) {
     var total = store.Products.Count;
     var items = store.Products

@@ -1,4 +1,6 @@
-﻿using Microsoft.OpenApi;
+﻿using Microsoft.OpenApi.Models;
+
+// Quan trọng: Phải là .Models
 
 namespace MvPresentation.Extensions;
 

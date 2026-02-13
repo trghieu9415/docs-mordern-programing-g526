@@ -45,7 +45,7 @@ public class GlobalExceptionMiddleware(
       DomainException dEx => (400, AppResponse.Fail(dEx.Message, 400).Value!),
       InfrastructureException iEx => (500, AppResponse.Fail(iEx.Message, 500).Value!),
       AppException appEx => (appEx.StatusCode, AppResponse.Fail(appEx.Message, appEx.StatusCode).Value!),
-      _ => (500, AppResponse.Fail("Lỗi hệ thống không xác định", 500).Value!)
+      _ => (500, AppResponse.Fail("Lỗi hệ thống!", 500).Value!)
     };
   }
 }

@@ -1,0 +1,167 @@
+# Test API với HTTP Client (VS Code REST Client Extension)
+
+@baseUrl = https://localhost:5001
+@accessToken = 
+@refreshToken = 
+
+### ============================================
+### USER ENDPOINTS
+### ============================================
+
+### 1. Đăng ký User mới
+POST {{baseUrl}}/api/user/auth/register
+Content-Type: application/json
+
+{
+  "userName": "john_doe",
+  "email": "john@example.com",
+  "password": "Strong@Password123"
+}
+
+### 2. Đăng nhập User
+# @name userLogin
+POST {{baseUrl}}/api/user/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "Strong@Password123"
+}
+
+### Extract tokens từ response
+@userAccessToken = {{userLogin.response.body.$.data.access.token}}
+@userRefreshToken = {{userLogin.response.body.$.data.refresh.token}}
+
+### 3. Lấy Profile User (cần access token)
+GET {{baseUrl}}/api/user/auth/profile
+Authorization: Bearer {{userAccessToken}}
+
+### 4. Refresh Token
+# @name refreshUser
+POST {{baseUrl}}/api/user/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{userRefreshToken}}"
+}
+
+### 5. Logout User
+POST {{baseUrl}}/api/user/auth/logout
+Authorization: Bearer {{userAccessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{userRefreshToken}}"
+}
+
+### ============================================
+### ADMIN ENDPOINTS
+### ============================================
+
+### 6. Đăng ký Admin
+POST {{baseUrl}}/api/admin/auth/register
+Content-Type: application/json
+
+{
+  "userName": "admin_user",
+  "email": "newadmin@example.com",
+  "password": "Admin@Strong123"
+}
+
+### 7. Đăng nhập Admin (seeded admin)
+# @name adminLogin
+POST {{baseUrl}}/api/admin/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin@123"
+}
+
+### Extract admin tokens
+@adminAccessToken = {{adminLogin.response.body.$.data.access.token}}
+@adminRefreshToken = {{adminLogin.response.body.$.data.refresh.token}}
+
+### 8. Lấy Profile Admin
+GET {{baseUrl}}/api/admin/auth/profile
+Authorization: Bearer {{adminAccessToken}}
+
+### 9. Lấy danh sách tất cả Users (Admin Only)
+GET {{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminAccessToken}}
+
+### 10. Test: User trying to access Admin endpoint (should fail with 403)
+GET {{baseUrl}}/api/admin/users
+Authorization: Bearer {{userAccessToken}}
+
+### ============================================
+### ERROR SCENARIOS
+### ============================================
+
+### 11. Login với password sai
+POST {{baseUrl}}/api/user/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "WrongPassword123"
+}
+
+### 12. Đăng ký với email đã tồn tại
+POST {{baseUrl}}/api/user/auth/register
+Content-Type: application/json
+
+{
+  "userName": "another_user",
+  "email": "john@example.com",
+  "password": "Strong@Password123"
+}
+
+### 13. Truy cập protected endpoint không có token
+GET {{baseUrl}}/api/user/auth/profile
+
+### 14. Sử dụng expired/invalid token
+GET {{baseUrl}}/api/user/auth/profile
+Authorization: Bearer invalid_token_here
+
+### 15. Refresh với invalid token
+POST {{baseUrl}}/api/user/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "invalid_refresh_token"
+}
+
+### ============================================
+### VALIDATION TESTS
+### ============================================
+
+### 16. Đăng ký với password yếu
+POST {{baseUrl}}/api/user/auth/register
+Content-Type: application/json
+
+{
+  "userName": "test_user",
+  "email": "test@example.com",
+  "password": "weak"
+}
+
+### 17. Đăng ký với email không hợp lệ
+POST {{baseUrl}}/api/user/auth/register
+Content-Type: application/json
+
+{
+  "userName": "test_user",
+  "email": "not-an-email",
+  "password": "Strong@Password123"
+}
+
+### 18. Đăng ký với username quá ngắn
+POST {{baseUrl}}/api/user/auth/register
+Content-Type: application/json
+
+{
+  "userName": "ab",
+  "email": "test2@example.com",
+  "password": "Strong@Password123"
+}

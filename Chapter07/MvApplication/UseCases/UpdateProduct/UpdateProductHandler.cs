@@ -1,10 +1,11 @@
-﻿using MediatR;
+using MediatR;
 using MvApplication.Exceptions;
 using MvApplication.Ports;
 
 namespace MvApplication.UseCases.UpdateProduct;
 
-public class UpdateProductHandler(IProductManager productManager) : IRequestHandler<UpdateProductCommand, Guid> {
+public class UpdateProductHandler(IProductManager productManager, ICacheStorage cache)
+  : IRequestHandler<UpdateProductCommand, Guid> {
   public async Task<Guid> Handle(UpdateProductCommand request, CancellationToken ct) {
     var product =
       await productManager.GetByIdAsync(request.Id, ct)
@@ -13,6 +14,7 @@ public class UpdateProductHandler(IProductManager productManager) : IRequestHand
     product.Update(request.Name, request.Price, request.ImageUrl);
     await productManager.UpdateAsync(product, ct);
 
+    await cache.RemoveAsync($"product:{request.Id}", ct);
     return product.Id;
   }
 }

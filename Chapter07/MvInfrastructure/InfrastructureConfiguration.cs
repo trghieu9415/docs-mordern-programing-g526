@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -7,6 +7,8 @@ using MvApplication.Behaviors;
 using MvApplication.Options;
 using MvApplication.Ports;
 using MvInfrastructure.Adapters;
+using MvInfrastructure.Extensions;
+using MvInfrastructure.Options;
 using MvInfrastructure.Store;
 
 namespace MvInfrastructure;
@@ -20,9 +22,15 @@ public static class InfrastructureConfiguration {
       .ValidateDataAnnotations()
       .ValidateOnStart();
 
+    services.AddOptions<RedisOptions>()
+      .Bind(config.GetSection(RedisOptions.SectionName))
+      .ValidateDataAnnotations()
+      .ValidateOnStart();
+
     services.AddSingleton(resolver =>
       resolver.GetRequiredService<IOptions<ProductOptions>>().Value);
 
+    services.AddDistributedInfrastructure();
 
     services.AddSingleton(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
     services.AddScoped<IProductManager, ProductManager>();
@@ -38,6 +46,7 @@ public static class InfrastructureConfiguration {
     services.AddMediatR(cfg => {
       cfg.RegisterServicesFromAssembly(applicationAssembly);
       cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+      cfg.AddOpenBehavior(typeof(LockBehavior<,>));
     });
 
     services.AddValidatorsFromAssembly(applicationAssembly);

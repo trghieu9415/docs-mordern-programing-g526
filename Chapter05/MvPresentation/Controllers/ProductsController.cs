@@ -1,10 +1,14 @@
-﻿using MediatR;
+﻿﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MvApplication.UseCases.CreateProduct;
 using MvApplication.UseCases.GetProduct;
+using MvApplication.UseCases.GetProductDetail;
 using MvApplication.UseCases.GetProducts;
+using MvApplication.UseCases.GetProductsByCategory;
+using MvApplication.UseCases.GetProductsWithCategory;
 using MvApplication.UseCases.RemoveProduct;
 using MvApplication.UseCases.UpdateProduct;
+using MvApplication.UseCases.UpdateStock;
 using MvPresentation.Response;
 
 namespace MvPresentation.Controllers;
@@ -23,6 +27,26 @@ public class ProductsController(IMediator mediator) : ControllerBase {
   public async Task<IActionResult> GetProduct(Guid id) {
     var result = await mediator.Send(new GetProductQuery(id));
     return AppResponse.Success(result.Product);
+  }
+  
+  [HttpGet("{id:guid}/detail")]
+  public async Task<IActionResult> GetProductDetail(Guid id) {
+    var result = await mediator.Send(new GetProductDetailQuery(id));
+    return AppResponse.Success(result.Product);
+  }
+
+  [HttpGet("with-category")]
+  public async Task<IActionResult> GetProductsWithCategory([FromQuery] GetProductsWithCategoryQuery query) {
+    var result = await mediator.Send(query);
+    return AppResponse.Success(result.Products, result.Meta);
+  }
+
+
+  [HttpGet("category/{categoryId:int}")]
+  public async Task<IActionResult> GetProductsByCategory(
+    int categoryId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) {
+    var result = await mediator.Send(new GetProductsByCategoryQuery(categoryId, page, pageSize));
+    return AppResponse.Success(result.Products, result.Meta);
   }
 
   [HttpPost]
@@ -43,4 +67,12 @@ public class ProductsController(IMediator mediator) : ControllerBase {
     await mediator.Send(new RemoveProductCommand(id));
     return AppResponse.Success("Xóa sản phẩm thành công");
   }
+  
+  [HttpPatch("{id:guid}/stock")]
+  public async Task<IActionResult> UpdateStock(Guid id, [FromBody] UpdateStockRequest body) {
+    var newStock = await mediator.Send(new UpdateStockCommand(id, body.Quantity));
+    return AppResponse.Success(new { Stock = newStock }, "Cập nhật tồn kho thành công");
+  }
+
+  public record UpdateStockRequest(int Quantity);
 }

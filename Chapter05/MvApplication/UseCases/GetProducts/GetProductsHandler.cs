@@ -7,7 +7,7 @@ using MvApplication.Ports;
 
 namespace MvApplication.UseCases.GetProducts;
 
-public class GetProductsHandler(IProductManager manager, ProductOptions options, IMapper mapper)
+public class GetProductsHandler(IUnitOfWork uow, ProductOptions options, IMapper mapper)
   : IRequestHandler<GetProductsQuery, GetProductsResult> {
   public async Task<GetProductsResult> Handle(GetProductsQuery request, CancellationToken ct) {
     var pageSize = request.PageSize > 0 ? request.PageSize : options.DefaultItemsPerPage;
@@ -18,7 +18,7 @@ public class GetProductsHandler(IProductManager manager, ProductOptions options,
 
     var page = request.Page > pageSize ? pageSize : request.Page;
 
-    var (items, total) = await manager.GetPagedAsync(page, pageSize, ct);
+    var (items, total) = await uow.Products.GetPagedAsync(page, pageSize, ct);
 
     var dtos = mapper.Map<IList<ProductDto>>(items);
     var meta = Meta.Create(request.Page, request.PageSize, total);

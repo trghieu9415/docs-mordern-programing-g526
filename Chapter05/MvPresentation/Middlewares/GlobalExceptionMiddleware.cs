@@ -1,4 +1,4 @@
-﻿using MvApplication.Exceptions;
+﻿﻿using MvApplication.Exceptions;
 using MvApplication.Ports;
 using MvDomain.Exceptions;
 using MvInfrastructure.Exceptions;
@@ -6,11 +6,8 @@ using MvPresentation.Response;
 
 namespace MvPresentation.Middlewares;
 
-public class GlobalExceptionMiddleware(
-  RequestDelegate next,
-  IAppLogger<GlobalExceptionMiddleware> logger
-) {
-  public async Task InvokeAsync(HttpContext context) {
+public class GlobalExceptionMiddleware(RequestDelegate next) {
+  public async Task InvokeAsync(HttpContext context, IAppLogger<GlobalExceptionMiddleware> logger) {
     try {
       await next(context);
     } catch (Exception ex) {
@@ -33,15 +30,16 @@ public class GlobalExceptionMiddleware(
       await context.Response.WriteAsJsonAsync(responseModel);
     }
   }
-
+  
+  
   private static (int StatusCode, object ResponseValue) MapException(Exception ex) {
     return ex switch {
       ValidationException vEx => (
         422,
-        AppResponse.Fail(
-          vEx.Errors,
-          vEx.Errors.FirstOrDefault() ?? "Dữ liệu không hợp lệ", 422).Value!
+        AppResponse.Fail(vEx.Errors, vEx.Errors.FirstOrDefault() ?? "Dữ liệu không hợp lệ", 422).Value!
       ),
+
+      ConcurrencyException cEx => (409, AppResponse.Fail(cEx.Message, 409).Value!),
       DomainException dEx => (400, AppResponse.Fail(dEx.Message, 400).Value!),
       InfrastructureException iEx => (500, AppResponse.Fail(iEx.Message, 500).Value!),
       AppException appEx => (appEx.StatusCode, AppResponse.Fail(appEx.Message, appEx.StatusCode).Value!),

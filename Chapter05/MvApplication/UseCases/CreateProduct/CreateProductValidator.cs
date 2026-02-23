@@ -12,8 +12,8 @@ public class CreateProductValidator : AbstractValidator<CreateProductCommand> {
     RuleFor(x => x.Price)
       .GreaterThanOrEqualTo(0).WithMessage("Giá sản phẩm không được nhỏ hơn 0.");
 
-    RuleFor(x => x.ImageUrl)
+    /*RuleFor(x => x.ImageUrl)
       .Must(uri => string.IsNullOrEmpty(uri) || Uri.TryCreate(uri, UriKind.Absolute, out _))
-      .WithMessage("Đường dẫn hình ảnh không hợp lệ (phải là URL tuyệt đối).");
+      .WithMessage("Đường dẫn hình ảnh không hợp lệ (phải là URL tuyệt đối).");*/
   }
 }

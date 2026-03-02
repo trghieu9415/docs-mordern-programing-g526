@@ -13,25 +13,21 @@ public class GetProductsHandler(
   ProductOptions options,
   IMapper mapper
 ) : IRequestHandler<GetProductsQuery, GetProductsResult> {
-  private const string CacheKeyPrefix = "products:paged";
+  private const string CacheKey = "products:first20";
   private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(2);
+  private const int FixedPage = 1;
+  private const int FixedPageSize = 20;
 
   public async Task<GetProductsResult> Handle(GetProductsQuery request, CancellationToken ct) {
-    var pageSize = request.PageSize > 0 ? request.PageSize : options.DefaultItemsPerPage;
-    if (pageSize > options.MaxItemsPerPage)
-      pageSize = options.MaxItemsPerPage;
-    var page = request.Page > pageSize ? pageSize : request.Page;
-
-    var cacheKey = $"{CacheKeyPrefix}:{page}:{pageSize}";
-    var cached = await cache.GetAsync<GetProductsResult>(cacheKey, ct);
+    var cached = await cache.GetAsync<GetProductsResult>(CacheKey, ct);
     if (cached != null)
       return cached;
 
-    var (items, total) = await manager.GetPagedAsync(page, pageSize, ct);
+    var (items, total) = await manager.GetPagedAsync(FixedPage, FixedPageSize, ct);
     var dtos = mapper.Map<IList<ProductDto>>(items);
-    var meta = Meta.Create(request.Page, request.PageSize, total);
+    var meta = Meta.Create(FixedPage, FixedPageSize, total);
     var result = new GetProductsResult(dtos, meta);
-    await cache.SetAsync(cacheKey, result, CacheExpiration, ct);
+    await cache.SetAsync(CacheKey, result, CacheExpiration, ct);
     return result;
   }
 }

@@ -13,6 +13,7 @@ public class RemoveProductHandler(IProductManager productManager, ICacheStorage 
 
     await productManager.DeleteAsync(request.Id, ct);
     await cache.RemoveAsync($"product:{request.Id}", ct);
+    await cache.RemoveAsync("products:first20", ct);
     return Unit.Value;
   }
 }

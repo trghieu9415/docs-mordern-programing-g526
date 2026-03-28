@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MvInfrastructure;
+using MvPresentation.Exceptions;
 using MvPresentation.Extensions;
-using MvPresentation.Middlewares;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,15 +27,17 @@ builder.Services.AddRouting(options => {
 });
 
 builder.Services.AddSwaggerDocument();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
-app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment()) {
   app.UseSwagger();
   app.UseSwaggerUI(c => {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Product API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Showtime API v1");
     c.DocExpansion(DocExpansion.None);
   });
 }

@@ -1,0 +1,68 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject SessionService Session
+@inject NavigationManager Navigation
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <NavMenu/>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="section-kicker">Controller + Hub driven client</span>
+        <h1 class="topbar-title">@GetCurrentTitle()</h1>
+      </div>
+
+      <div class="topbar-actions">
+        @if (Session.IsAuthenticated)
+        {
+          <span class="user-pill">@Session.Username</span>
+          <button class="secondary-btn" @onclick="LogoutAsync">Logout</button>
+        }
+        else
+        {
+          <NavLink class="secondary-btn" href="/login">Login</NavLink>
+          <NavLink class="primary-btn" href="/register">Register</NavLink>
+        }
+      </div>
+    </header>
+
+    <main class="main-content">
+      @Body
+    </main>
+  </div>
+</div>
+
+@code {
+  protected override async Task OnInitializedAsync() {
+    Session.OnChange += HandleSessionChanged;
+    await Session.InitializeAsync();
+  }
+
+  private async Task LogoutAsync() {
+    await Session.LogoutAsync();
+    Navigation.NavigateTo("/login", true);
+  }
+
+  private void HandleSessionChanged() {
+    _ = InvokeAsync(StateHasChanged);
+  }
+
+  private string GetCurrentTitle() {
+    var route = Navigation.ToBaseRelativePath(Navigation.Uri).Trim('/');
+    return route switch {
+      "" => "Cinema Booking Dashboard",
+      "login" => "Login Flow",
+      "register" => "Register Flow",
+      "getshowtime" or "showtimes" => "Showtime Browser",
+      var value when value.StartsWith("seatmap", StringComparison.OrdinalIgnoreCase) => "Realtime SeatMap",
+      _ => "Simple Client"
+    };
+  }
+
+  public void Dispose() {
+    Session.OnChange -= HandleSessionChanged;
+  }
+}

@@ -1,0 +1,41 @@
+﻿@page "/"
+
+<PageTitle>Mv Cinema</PageTitle>
+
+<section class="hero-panel">
+  <div class="hero-copy">
+    <span class="section-kicker">Realtime cinema booking</span>
+    <h1>Mô phỏng luồng đặt vé dựa trên `controller` và `hub` hiện có.</h1>
+    <p>
+      Từ đăng nhập, đăng ký, xem lịch chiếu đến chọn ghế và thanh toán giả lập, mọi thứ được nối thành
+      một flow thống nhất để dễ demo và kiểm thử.
+    </p>
+    <div class="cta-row">
+      <NavLink class="primary-btn" href="/login">Vào Login</NavLink>
+      <NavLink class="secondary-btn" href="/getshowtime">Xem GetShowtime</NavLink>
+    </div>
+  </div>
+
+  <div class="hero-grid">
+    <article class="feature-card">
+      <span class="feature-step">01</span>
+      <h2>Login</h2>
+      <p>Nhận JWT từ `AuthController/login` và lưu tại trình duyệt để dùng lại cho `SignalR` và `BookSeats`.</p>
+    </article>
+    <article class="feature-card">
+      <span class="feature-step">02</span>
+      <h2>Register</h2>
+      <p>Tạo tài khoản mới nhanh, nhận token ngay sau khi đăng ký xong để đi tiếp vào luồng đặt vé.</p>
+    </article>
+    <article class="feature-card">
+      <span class="feature-step">03</span>
+      <h2>GetShowtime</h2>
+      <p>Đọc danh sách từ `ShowtimesController` và hiển thị dưới dạng card rõ ràng, dễ chọn.</p>
+    </article>
+    <article class="feature-card">
+      <span class="feature-step">04</span>
+      <h2>SeatMap</h2>
+      <p>Kết nối `CinemaHub`, giữ ghế theo thời gian thực, rồi thanh toán giả lập ngay trên trang.</p>
+    </article>
+  </div>
+</section>

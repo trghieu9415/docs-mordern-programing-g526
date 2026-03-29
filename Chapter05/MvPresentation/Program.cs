@@ -1,6 +1,9 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 using MvInfrastructure;
+using MvInfrastructure.Data;
+using MvInfrastructure.Seed;
 using MvPresentation.Extensions;
 using MvPresentation.Middlewares;
 using Swashbuckle.AspNetCore.SwaggerUI;
@@ -30,18 +33,25 @@ builder.Services.AddSwaggerDocument();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope()) {
+  var dbContext = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+  var seed = scope.ServiceProvider.GetRequiredService<LibrarySeed>();
+
+  await dbContext.Database.MigrateAsync();
+  await seed.SeedAsync();
+}
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment()) {
   app.UseSwagger();
   app.UseSwaggerUI(c => {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Product API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "E-Library API v1");
     c.DocExpansion(DocExpansion.None);
   });
 }
 
 app.UseHttpsRedirection();
-// app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

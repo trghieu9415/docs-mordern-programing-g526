@@ -1,13 +1,16 @@
 ﻿using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using MvApplication;
 using MvApplication.Behaviors;
-using MvApplication.Options;
 using MvApplication.Ports;
+using MvApplication.Repositories;
+using MvApplication.Services;
 using MvInfrastructure.Adapters;
-using MvInfrastructure.Store;
+using MvInfrastructure.Data;
+using MvInfrastructure.Repositories;
+using MvInfrastructure.Seed;
 
 namespace MvInfrastructure;
 
@@ -15,19 +18,21 @@ public static class InfrastructureConfiguration {
   public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config) {
     services.AddApplication();
 
-    services.AddOptions<ProductOptions>()
-      .Bind(config.GetSection(ProductOptions.SectionName))
-      .ValidateDataAnnotations()
-      .ValidateOnStart();
+    var connectionString =
+      config.GetConnectionString("LibraryDb")
+      ?? "Host=localhost;Port=5432;Database=elibrary_db;Username=postgres;Password=postgres";
 
-    services.AddSingleton(resolver =>
-      resolver.GetRequiredService<IOptions<ProductOptions>>().Value);
-
+    services.AddDbContext<LibraryDbContext>(options => {
+      options.UseNpgsql(connectionString);
+    });
 
     services.AddSingleton(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
-    services.AddScoped<IProductManager, ProductManager>();
-
-    services.AddSingleton<ProductStore>();
+    services.AddScoped<IBookReadRepository, BookReadRepository>();
+    services.AddScoped<IBookRepository, BookRepository>();
+    services.AddScoped<ICategoryRepository, CategoryRepository>();
+    services.AddScoped<IUnitOfWork, UnitOfWork>();
+    services.AddScoped<IBookService, BookService>();
+    services.AddScoped<LibrarySeed>();
 
     return services;
   }
@@ -41,9 +46,6 @@ public static class InfrastructureConfiguration {
     });
 
     services.AddValidatorsFromAssembly(applicationAssembly);
-    services.AddAutoMapper(_ => {}, applicationAssembly);
-
-    services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
     return services;
   }
 }

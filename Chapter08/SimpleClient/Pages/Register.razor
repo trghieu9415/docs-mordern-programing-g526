@@ -1,0 +1,93 @@
+@page "/register"
+@using System.ComponentModel.DataAnnotations
+@inject CinemaApiClient ApiClient
+@inject SessionService Session
+@inject NavigationManager Navigation
+
+<PageTitle>Register</PageTitle>
+
+<section class="auth-shell">
+  <div class="auth-card">
+    <span class="section-kicker">Create account</span>
+    <h1>Register</h1>
+    <p class="section-subtitle">Tạo tài khoản mới qua `AuthController/register` rồi đi thẳng vào bước chọn lịch chiếu.</p>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+      <div class="status-banner status-error">@_error</div>
+    }
+
+    <EditForm Model="_model" OnValidSubmit="HandleRegisterAsync">
+      <DataAnnotationsValidator />
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="register-username">Username</label>
+          <InputText id="register-username" class="form-input" @bind-Value="_model.Username" />
+          <ValidationMessage For="@(() => _model.Username)" />
+        </div>
+
+        <div class="form-field">
+          <label for="register-password">Password</label>
+          <InputText id="register-password" class="form-input" type="password" @bind-Value="_model.Password" />
+          <ValidationMessage For="@(() => _model.Password)" />
+        </div>
+
+        <div class="form-field">
+          <label for="register-confirm">Confirm Password</label>
+          <InputText id="register-confirm" class="form-input" type="password" @bind-Value="_model.ConfirmPassword" />
+          <ValidationMessage For="@(() => _model.ConfirmPassword)" />
+        </div>
+      </div>
+
+      <div class="cta-row auth-actions">
+        <button class="primary-btn" type="submit" disabled="@_submitting">
+          @(_submitting ? "Đang tạo tài khoản..." : "Register")
+        </button>
+        <NavLink class="secondary-btn" href="/login">Quay lại Login</NavLink>
+      </div>
+    </EditForm>
+  </div>
+</section>
+
+@code {
+  private readonly RegisterFormModel _model = new();
+  private bool _submitting;
+  private string? _error;
+
+  protected override async Task OnInitializedAsync() {
+    await Session.InitializeAsync();
+    if (Session.IsAuthenticated) {
+      Navigation.NavigateTo("/getshowtime", true);
+    }
+  }
+
+  private async Task HandleRegisterAsync() {
+    _submitting = true;
+    _error = null;
+
+    try {
+      var result = await ApiClient.RegisterAsync(new RegisterRequest(_model.Username, _model.Password));
+      await Session.SaveAuthAsync(result.Token, _model.Username);
+      Navigation.NavigateTo("/getshowtime", true);
+    } catch (Exception ex) {
+      _error = ex.Message;
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  private sealed class RegisterFormModel {
+    [Required(ErrorMessage = "Username không được để trống.")]
+    [MinLength(3, ErrorMessage = "Username phải có ít nhất 3 ký tự.")]
+    public string Username { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password không được để trống.")]
+    [MinLength(6, ErrorMessage = "Password phải có ít nhất 6 ký tự.")]
+    public string Password { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Bạn cần nhập lại mật khẩu.")]
+    [Compare(nameof(Password), ErrorMessage = "Mật khẩu xác nhận chưa khớp.")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+  }
+}

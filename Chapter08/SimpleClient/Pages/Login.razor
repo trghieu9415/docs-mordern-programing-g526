@@ -1,0 +1,83 @@
+@page "/login"
+@using System.ComponentModel.DataAnnotations
+@inject CinemaApiClient ApiClient
+@inject SessionService Session
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<section class="auth-shell">
+  <div class="auth-card">
+    <span class="section-kicker">Account access</span>
+    <h1>Login</h1>
+    <p class="section-subtitle">Đăng nhập để giữ ghế realtime và gọi `BookSeats` với JWT hiện tại.</p>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+      <div class="status-banner status-error">@_error</div>
+    }
+
+    <EditForm Model="_model" OnValidSubmit="HandleLoginAsync">
+      <DataAnnotationsValidator />
+
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="login-username">Username</label>
+          <InputText id="login-username" class="form-input" @bind-Value="_model.Username" />
+          <ValidationMessage For="@(() => _model.Username)" />
+        </div>
+
+        <div class="form-field">
+          <label for="login-password">Password</label>
+          <InputText id="login-password" class="form-input" type="password" @bind-Value="_model.Password" />
+          <ValidationMessage For="@(() => _model.Password)" />
+        </div>
+      </div>
+
+      <div class="cta-row auth-actions">
+        <button class="primary-btn" type="submit" disabled="@_submitting">
+          @(_submitting ? "Đang đăng nhập..." : "Login")
+        </button>
+        <NavLink class="secondary-btn" href="/register">Sang Register</NavLink>
+      </div>
+    </EditForm>
+  </div>
+</section>
+
+@code {
+  private readonly LoginFormModel _model = new();
+  private bool _submitting;
+  private string? _error;
+
+  protected override async Task OnInitializedAsync() {
+    await Session.InitializeAsync();
+    if (Session.IsAuthenticated) {
+      Navigation.NavigateTo("/getshowtime", true);
+    }
+  }
+
+  private async Task HandleLoginAsync() {
+    _submitting = true;
+    _error = null;
+
+    try {
+      var result = await ApiClient.LoginAsync(new LoginRequest(_model.Username, _model.Password));
+      await Session.SaveAuthAsync(result.Token, _model.Username);
+      Navigation.NavigateTo("/getshowtime", true);
+    } catch (Exception ex) {
+      _error = ex.Message;
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  private sealed class LoginFormModel {
+    [Required(ErrorMessage = "Username không được để trống.")]
+    [MinLength(3, ErrorMessage = "Username phải có ít nhất 3 ký tự.")]
+    public string Username { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password không được để trống.")]
+    [MinLength(6, ErrorMessage = "Password phải có ít nhất 6 ký tự.")]
+    public string Password { get; set; } = string.Empty;
+  }
+}

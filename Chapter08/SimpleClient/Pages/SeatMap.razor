@@ -1,0 +1,565 @@
+@page "/seatmap"
+@page "/seatmap/{ShowtimeId:guid}"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.SignalR.Client
+@inject CinemaApiClient ApiClient
+@inject SessionService Session
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageTitle>SeatMap</PageTitle>
+
+<section class="page-section seat-page">
+  <div class="section-header">
+    <div>
+      <span class="section-kicker">Realtime seats</span>
+      <h1>SeatMap</h1>
+      <p class="section-subtitle">Giữ ghế qua `CinemaHub`, cập nhật trạng thái realtime và thanh toán giả lập cho `BookSeats` ngay trên trang.</p>
+    </div>
+    <NavLink class="secondary-btn" href="/getshowtime">Quay lại GetShowtime</NavLink>
+  </div>
+
+  @if (!string.IsNullOrWhiteSpace(_error))
+  {
+    <div class="status-banner status-error">@_error</div>
+  }
+
+  @if (!string.IsNullOrWhiteSpace(_infoMessage))
+  {
+    <div class="status-banner status-info">@_infoMessage</div>
+  }
+
+  @if (_loading)
+  {
+    <div class="empty-state">Đang chuẩn bị sơ đồ ghế và kết nối realtime...</div>
+  }
+  else if (_showtime is null)
+  {
+    <div class="empty-state">Không tìm thấy lịch chiếu tương ứng.</div>
+  }
+  else
+  {
+    <div class="seat-layout">
+      <div class="seat-stage">
+        <div class="movie-panel">
+          <div class="movie-header">
+            <div>
+              <span class="section-kicker">Now showing</span>
+              <h2>@_showtime.MovieTitle</h2>
+            </div>
+            <div class="presence-pill">
+              <span class="@(_hubReady ? "presence-dot online" : "presence-dot offline")"></span>
+              @(_hubReady ? "Realtime online" : "Realtime offline")
+            </div>
+          </div>
+
+          <div class="movie-meta-grid">
+            <div>
+              <span class="meta-label">Khởi chiếu</span>
+              <strong>@_showtime.StartTime.ToString("dd/MM/yyyy HH:mm")</strong>
+            </div>
+            <div>
+              <span class="meta-label">Giá tạm tính / ghế</span>
+              <strong>@FormatCurrency(ApiClient.EstimateTicketTotal(_showtime.StartTime, 1))</strong>
+            </div>
+            <div>
+              <span class="meta-label">Nhịp realtime</span>
+              <strong>@($"{Math.Max(_audienceCount, 0)} người dùng khác")</strong>
+            </div>
+          </div>
+
+          <div class="screen-label">SCREEN</div>
+
+          <div class="seat-legend">
+            <span><i class="legend-dot seat-available"></i>Trống</span>
+            <span><i class="legend-dot seat-selected"></i>Đang chọn</span>
+            <span><i class="legend-dot seat-held"></i>Người khác giữ</span>
+            <span><i class="legend-dot seat-booked"></i>Đã bán</span>
+          </div>
+
+          <div class="seat-grid">
+            @foreach (var row in SeatRows)
+            {
+              <div class="seat-row">
+                <span class="row-label">@row</span>
+                @foreach (var column in SeatColumns)
+                {
+                  var seatCode = $"{row}{column}";
+                  <button
+                    class="@GetSeatClass(seatCode)"
+                    disabled="@IsSeatDisabled(seatCode)"
+                    @onclick="() => ToggleSeatAsync(seatCode)">
+                    @seatCode
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <aside class="booking-panel">
+          <div class="booking-card">
+            <span class="section-kicker">Selection</span>
+            <h2>Ghế đang giữ</h2>
+
+            @if (_selectedSeats.Count == 0)
+            {
+              <p class="muted-copy">Chọn ghế trực tiếp trên sơ đồ để bắt đầu thanh toán.</p>
+            }
+            else
+            {
+              <div class="selected-seat-list">
+                @foreach (var seat in _selectedSeats.OrderBy(x => x))
+                {
+                  <button class="seat-tag" @onclick="() => ToggleSeatAsync(seat)">@seat</button>
+                }
+              </div>
+            }
+
+            <div class="summary-row">
+              <span>Số ghế</span>
+              <strong>@_selectedSeats.Count</strong>
+            </div>
+            <div class="summary-row">
+              <span>Tổng tạm tính</span>
+              <strong>@FormatCurrency(EstimatedTotal)</strong>
+            </div>
+
+            <div class="cta-stack">
+              <button class="primary-btn wide-btn" @onclick="OpenPayment" disabled="@(!_hubReady || _selectedSeats.Count == 0)">
+                Mở cửa sổ thanh toán
+              </button>
+              <button class="secondary-btn wide-btn" @onclick="ReleaseAllSelectedAsync" disabled="@(_selectedSeats.Count == 0)">
+                Bỏ toàn bộ ghế đang giữ
+              </button>
+            </div>
+          </div>
+
+          @if (_latestTicket is not null)
+          {
+            <div class="booking-card success-card">
+              <span class="section-kicker">Latest booking</span>
+              <h2>Thanh toán thành công</h2>
+              <div class="summary-row">
+                <span>Ghế</span>
+                <strong>@string.Join(", ", _latestTicket.SeatCodes)</strong>
+              </div>
+              <div class="summary-row">
+                <span>Tổng tiền</span>
+                <strong>@FormatCurrency(_latestTicket.TotalPrice)</strong>
+              </div>
+            </div>
+          }
+        </aside>
+      </div>
+    </div>
+  }
+</section>
+
+@if (_showPaymentModal && _showtime is not null)
+{
+  <div class="modal-backdrop" @onclick="ClosePayment">
+    <div class="payment-modal" @onclick:stopPropagation="true">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker">Fake checkout</span>
+          <h2>Thanh toán `BookSeats`</h2>
+        </div>
+        <button class="modal-close" @onclick="ClosePayment" disabled="@_bookingBusy">×</button>
+      </div>
+
+      @if (!string.IsNullOrWhiteSpace(_paymentError))
+      {
+        <div class="status-banner status-error">@_paymentError</div>
+      }
+
+      <EditForm Model="_paymentModel" OnValidSubmit="BookSeatsAsync">
+        <DataAnnotationsValidator />
+
+        <div class="payment-grid">
+          <div class="form-field">
+            <label for="payment-name">Chủ thẻ</label>
+            <InputText id="payment-name" class="form-input" @bind-Value="_paymentModel.CardHolder" />
+            <ValidationMessage For="@(() => _paymentModel.CardHolder)" />
+          </div>
+
+          <div class="form-field">
+            <label for="payment-card">Số thẻ</label>
+            <InputText id="payment-card" class="form-input" @bind-Value="_paymentModel.CardNumber" />
+            <ValidationMessage For="@(() => _paymentModel.CardNumber)" />
+          </div>
+
+          <div class="form-field">
+            <label for="payment-phone">Số điện thoại</label>
+            <InputText id="payment-phone" class="form-input" @bind-Value="_paymentModel.PhoneNumber" />
+            <ValidationMessage For="@(() => _paymentModel.PhoneNumber)" />
+          </div>
+
+          <div class="form-field">
+            <label for="payment-method">Phương thức</label>
+            <InputSelect id="payment-method" class="form-input" @bind-Value="_paymentModel.PaymentMethod">
+              <option value="Banking">Internet Banking</option>
+              <option value="CreditCard">Credit Card</option>
+              <option value="EWallet">E-Wallet</option>
+            </InputSelect>
+          </div>
+        </div>
+
+        <div class="checkout-summary">
+          <div class="summary-row">
+            <span>Suất chiếu</span>
+            <strong>@_showtime.MovieTitle</strong>
+          </div>
+          <div class="summary-row">
+            <span>Ghế</span>
+            <strong>@string.Join(", ", _selectedSeats.OrderBy(x => x))</strong>
+          </div>
+          <div class="summary-row total-row">
+            <span>Tổng thanh toán</span>
+            <strong>@FormatCurrency(EstimatedTotal)</strong>
+          </div>
+        </div>
+
+        <div class="cta-row auth-actions">
+          <button class="primary-btn" type="submit" disabled="@_bookingBusy">
+            @(_bookingBusy ? "Đang xử lý..." : "Xác nhận BookSeats")
+          </button>
+          <button class="secondary-btn" type="button" @onclick="ClosePayment" disabled="@_bookingBusy">Đóng</button>
+        </div>
+      </EditForm>
+    </div>
+  </div>
+}
+
+@code {
+  private static readonly string[] SeatRows = ["A", "B", "C", "D", "E", "F", "G", "H"];
+  private static readonly int[] SeatColumns = Enumerable.Range(1, 8).ToArray();
+
+  [Parameter]
+  public Guid? ShowtimeId { get; set; }
+
+  private readonly HashSet<string> _selectedSeats = new(StringComparer.OrdinalIgnoreCase);
+  private readonly HashSet<string> _heldSeats = new(StringComparer.OrdinalIgnoreCase);
+  private readonly HashSet<string> _bookedSeats = new(StringComparer.OrdinalIgnoreCase);
+  private readonly HashSet<string> _busySeats = new(StringComparer.OrdinalIgnoreCase);
+  private readonly PaymentFormModel _paymentModel = new();
+
+  private List<ShowtimeItem> _showtimes = [];
+  private HubConnection? _connection;
+  private ShowtimeItem? _showtime;
+  private TicketInfo? _latestTicket;
+  private Guid? _connectedShowtimeId;
+  private bool _loading = true;
+  private bool _hubReady;
+  private bool _showPaymentModal;
+  private bool _bookingBusy;
+  private int _audienceCount;
+  private string? _error;
+  private string? _infoMessage;
+  private string? _paymentError;
+
+  private decimal EstimatedTotal => _showtime is null ? 0 : ApiClient.EstimateTicketTotal(_showtime.StartTime, _selectedSeats.Count);
+
+  protected override async Task OnParametersSetAsync() {
+    await Session.InitializeAsync();
+    if (!Session.IsAuthenticated || string.IsNullOrWhiteSpace(Session.Token)) {
+      Navigation.NavigateTo("/login");
+      return;
+    }
+
+    await LoadShowtimeAsync();
+    if (_showtime is not null) {
+      await EnsureHubConnectionAsync();
+    }
+  }
+
+  private async Task LoadShowtimeAsync() {
+    _loading = true;
+    _error = null;
+
+    try {
+      _showtimes = (await ApiClient.GetShowtimesAsync()).OrderBy(x => x.StartTime).ToList();
+
+      if (ShowtimeId is null || ShowtimeId == Guid.Empty) {
+        var fallbackShowtime = _showtimes.FirstOrDefault();
+        if (fallbackShowtime is not null) {
+          Navigation.NavigateTo($"/seatmap/{fallbackShowtime.Id}", true);
+          return;
+        }
+      }
+
+      var nextShowtime = _showtimes.FirstOrDefault(x => x.Id == ShowtimeId);
+      if (nextShowtime is null) {
+        _showtime = null;
+        _error = "Không tìm thấy lịch chiếu này.";
+        return;
+      }
+
+      if (_connectedShowtimeId != nextShowtime.Id) {
+        ResetSeatState();
+      }
+
+      _showtime = nextShowtime;
+    } catch (Exception ex) {
+      _error = ex.Message;
+    } finally {
+      _loading = false;
+    }
+  }
+
+  private async Task EnsureHubConnectionAsync() {
+    if (_showtime is null || string.IsNullOrWhiteSpace(Session.Token)) {
+      return;
+    }
+
+    if (_connection is not null && _connectedShowtimeId == _showtime.Id) {
+      return;
+    }
+
+    await DisposeConnectionAsync();
+
+    _connection = ApiClient.CreateCinemaHubConnection(Session.Token);
+    RegisterHubEvents(_connection);
+
+    try {
+      await _connection.StartAsync();
+      await _connection.InvokeAsync("JoinShowtimeGroup", _showtime.Id);
+      _connectedShowtimeId = _showtime.Id;
+      _hubReady = true;
+      _infoMessage = "Đã kết nối CinemaHub và sẵn sàng giữ ghế.";
+    } catch (Exception ex) {
+      _hubReady = false;
+      _error = $"Không kết nối được realtime: {ex.Message}";
+    }
+  }
+
+  private void RegisterHubEvents(HubConnection connection) {
+    connection.On<SeatStatusSnapshot>("SeatStatuses", seatInfo => {
+      _bookedSeats.Clear();
+      _heldSeats.Clear();
+
+      foreach (var seat in seatInfo.BookedSeats.Distinct(StringComparer.OrdinalIgnoreCase)) {
+        _bookedSeats.Add(seat);
+      }
+
+      foreach (var seat in seatInfo.HeldSeats.Distinct(StringComparer.OrdinalIgnoreCase)) {
+        if (!_selectedSeats.Contains(seat)) {
+          _heldSeats.Add(seat);
+        }
+      }
+
+      _ = InvokeAsync(StateHasChanged);
+    });
+
+    connection.On<string>("SeatHeld", seatCode => {
+      if (!_selectedSeats.Contains(seatCode) && !_bookedSeats.Contains(seatCode)) {
+        _heldSeats.Add(seatCode);
+      }
+
+      _ = InvokeAsync(StateHasChanged);
+    });
+
+    connection.On<IEnumerable<string>>("SeatReleased", seatCodes => {
+      foreach (var seat in seatCodes) {
+        _heldSeats.Remove(seat);
+      }
+
+      _ = InvokeAsync(StateHasChanged);
+    });
+
+    connection.On<IEnumerable<string>>("SeatSold", seatCodes => {
+      foreach (var seat in seatCodes) {
+        _heldSeats.Remove(seat);
+        _selectedSeats.Remove(seat);
+        _bookedSeats.Add(seat);
+      }
+
+      _ = InvokeAsync(StateHasChanged);
+    });
+
+    connection.On<int>("NewUserJoined", count => {
+      _audienceCount = Math.Max(count, 0);
+      _ = InvokeAsync(StateHasChanged);
+    });
+
+    connection.On<int>("NewUserOut", count => {
+      _audienceCount = Math.Max(count, 0);
+      _ = InvokeAsync(StateHasChanged);
+    });
+
+    connection.Closed += async _ => {
+      _hubReady = false;
+      _infoMessage = "Kết nối realtime đã đóng.";
+      await InvokeAsync(StateHasChanged);
+    };
+
+    connection.Reconnected += async _ => {
+      _hubReady = true;
+      if (_showtime is not null) {
+        await connection.InvokeAsync("JoinShowtimeGroup", _showtime.Id);
+      }
+
+      _infoMessage = "Đã kết nối lại CinemaHub.";
+      await InvokeAsync(StateHasChanged);
+    };
+  }
+
+  private async Task ToggleSeatAsync(string seatCode) {
+    if (_connection is null || _showtime is null || _busySeats.Contains(seatCode)) {
+      return;
+    }
+
+    if (_bookedSeats.Contains(seatCode) || _heldSeats.Contains(seatCode)) {
+      return;
+    }
+
+    _error = null;
+    _paymentError = null;
+
+    var isSelected = _selectedSeats.Contains(seatCode);
+    _busySeats.Add(seatCode);
+
+    try {
+      if (isSelected) {
+        _selectedSeats.Remove(seatCode);
+        await _connection.InvokeAsync("ReleaseSeat", seatCode);
+      } else {
+        _selectedSeats.Add(seatCode);
+        await _connection.InvokeAsync("HoldSeat", seatCode);
+      }
+    } catch (Exception ex) {
+      if (isSelected) {
+        _selectedSeats.Add(seatCode);
+      } else {
+        _selectedSeats.Remove(seatCode);
+      }
+
+      _error = ex.Message;
+    } finally {
+      _busySeats.Remove(seatCode);
+    }
+  }
+
+  private void OpenPayment() {
+    _paymentError = null;
+    _showPaymentModal = _selectedSeats.Count > 0;
+  }
+
+  private void ClosePayment() {
+    if (_bookingBusy) {
+      return;
+    }
+
+    _showPaymentModal = false;
+  }
+
+  private async Task ReleaseAllSelectedAsync() {
+    foreach (var seat in _selectedSeats.OrderBy(x => x).ToList()) {
+      await ToggleSeatAsync(seat);
+    }
+  }
+
+  private async Task BookSeatsAsync() {
+    if (_showtime is null || string.IsNullOrWhiteSpace(Session.Token) || _selectedSeats.Count == 0) {
+      return;
+    }
+
+    _bookingBusy = true;
+    _paymentError = null;
+
+    try {
+      var ticket = await ApiClient.BookSeatsAsync(_showtime.Id, Session.Token);
+      _latestTicket = ticket;
+
+      foreach (var seat in ticket.SeatCodes) {
+        _selectedSeats.Remove(seat);
+        _heldSeats.Remove(seat);
+        _bookedSeats.Add(seat);
+      }
+
+      _paymentModel.Reset();
+      _showPaymentModal = false;
+      _infoMessage = "Thanh toán thành công. Ghế đã được chuyển sang trạng thái đã bán.";
+    } catch (Exception ex) {
+      _paymentError = ex.Message;
+    } finally {
+      _bookingBusy = false;
+    }
+  }
+
+  private string GetSeatClass(string seatCode) {
+    if (_bookedSeats.Contains(seatCode)) {
+      return "seat-btn seat-booked";
+    }
+
+    if (_selectedSeats.Contains(seatCode)) {
+      return "seat-btn seat-selected";
+    }
+
+    if (_heldSeats.Contains(seatCode)) {
+      return "seat-btn seat-held";
+    }
+
+    return "seat-btn seat-available";
+  }
+
+  private bool IsSeatDisabled(string seatCode) {
+    return _bookedSeats.Contains(seatCode) || _heldSeats.Contains(seatCode) || _busySeats.Contains(seatCode);
+  }
+
+  private void ResetSeatState() {
+    _selectedSeats.Clear();
+    _heldSeats.Clear();
+    _bookedSeats.Clear();
+    _busySeats.Clear();
+    _showPaymentModal = false;
+    _paymentError = null;
+  }
+
+  private async Task DisposeConnectionAsync() {
+    if (_connection is null) {
+      return;
+    }
+
+    try {
+      await _connection.StopAsync();
+      await _connection.DisposeAsync();
+    } catch {
+      // Ignore shutdown errors during page navigation/disposal.
+    } finally {
+      _connection = null;
+      _connectedShowtimeId = null;
+      _hubReady = false;
+    }
+  }
+
+  private static string FormatCurrency(decimal value) {
+    return $"{value:N0} đ";
+  }
+
+  public async ValueTask DisposeAsync() {
+    await DisposeConnectionAsync();
+  }
+
+  private sealed class PaymentFormModel {
+    [Required(ErrorMessage = "Tên chủ thẻ không được để trống.")]
+    public string CardHolder { get; set; } = "Mv Demo User";
+
+    [Required(ErrorMessage = "Số thẻ không được để trống.")]
+    [MinLength(12, ErrorMessage = "Số thẻ cần ít nhất 12 ký tự.")]
+    public string CardNumber { get; set; } = "9704000000000000";
+
+    [Required(ErrorMessage = "Số điện thoại không được để trống.")]
+    [MinLength(10, ErrorMessage = "Số điện thoại chưa hợp lệ.")]
+    public string PhoneNumber { get; set; } = "0900000000";
+
+    public string PaymentMethod { get; set; } = "Banking";
+
+    public void Reset() {
+      CardHolder = "Mv Demo User";
+      CardNumber = "9704000000000000";
+      PhoneNumber = "0900000000";
+      PaymentMethod = "Banking";
+    }
+  }
+}

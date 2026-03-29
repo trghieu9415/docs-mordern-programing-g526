@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MvApplication;
 using MvApplication.Behaviors;
-using MvApplication.Options;
+using MvApplication.Configs;
+using MvApplication.Configs.Options;
 using MvApplication.Ports;
 using MvInfrastructure.Adapters;
-using MvInfrastructure.Store;
 
 namespace MvInfrastructure;
 
@@ -15,19 +15,18 @@ public static class InfrastructureConfiguration {
   public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config) {
     services.AddApplication();
 
-    services.AddOptions<ProductOptions>()
-      .Bind(config.GetSection(ProductOptions.SectionName))
-      .ValidateDataAnnotations()
-      .ValidateOnStart();
+    services.AddSingleton<ICinemaDataStore, CinemaDataStore>();
+    services.AddSingleton<ISeatStateStore, SeatStateStore>();
+    services.AddSingleton<IUserDataStore, UserDataStore>();
 
-    services.AddSingleton(resolver =>
-      resolver.GetRequiredService<IOptions<ProductOptions>>().Value);
+    services.AddScoped<IBookingService, BookingService>();
+    services.AddScoped<IAuthService, AuthService>();
 
+    services.AddTransient<ITicketPriceCalculator, TicketPriceCalculator>();
+    services.AddTransient<IJwtService, JwtService>();
 
-    services.AddSingleton(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
-    services.AddScoped<IProductManager, ProductManager>();
-
-    services.AddSingleton<ProductStore>();
+    services.RegisterOption<CinemaSettings>(config);
+    services.RegisterOption<JwtSettings>(config);
 
     return services;
   }
@@ -41,9 +40,19 @@ public static class InfrastructureConfiguration {
     });
 
     services.AddValidatorsFromAssembly(applicationAssembly);
-    services.AddAutoMapper(_ => {}, applicationAssembly);
-
-    services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
     return services;
+  }
+
+  private static void RegisterOption<TOptions>(this IServiceCollection services, IConfiguration config)
+    where TOptions : class, IOptionSection {
+    var sectionName = typeof(TOptions).GetProperty("SectionName")?.GetValue(null) as string;
+
+    services.AddOptions<TOptions>()
+      .Bind(config.GetSection(sectionName!))
+      .ValidateDataAnnotations()
+      .ValidateOnStart();
+
+    services.AddSingleton(resolver =>
+      resolver.GetRequiredService<IOptions<TOptions>>().Value);
   }
 }

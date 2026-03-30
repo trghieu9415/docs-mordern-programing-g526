@@ -26,31 +26,39 @@ public class BookService(
       .ToList();
   }
 
-  public async Task<BookDto> GetDetailAsync(int id, CancellationToken ct = default) {
+  public async Task<(BookDto Book, uint RowVersion)> GetDetailAsync(int id, CancellationToken ct = default) {
     var book = await bookReadRepository
       .GetById(id)
-      .Select(book => new BookDto(
-        book.Id,
-        book.Title,
-        book.RowVersion,
-        book.Categories
-          .OrderBy(category => category.Name)
-          .Select(category => new CategoryDto(category.Id, category.Name))
-          .ToList(),
-        book.BookDetail == null
-          ? null
-          : new BookDetailDto(
-            book.BookDetail.Id,
-            book.BookDetail.Summary,
-            book.BookDetail.IsEbook
-          )
-      ))
+      .Select(book => new {
+        Book = new BookDto(
+          book.Id,
+          book.Title,
+          book.Categories
+            .OrderBy(category => category.Name)
+            .Select(category => new CategoryDto(category.Id, category.Name))
+            .ToList(),
+          book.BookDetail == null
+            ? null
+            : new BookDetailDto(
+              book.BookDetail.Id,
+              book.BookDetail.Summary,
+              book.BookDetail.IsEbook
+            )
+        ),
+        book.RowVersion}
+      )
       .FirstOrDefaultAsync(ct);
 
-    return book ?? throw new AppException($"Kh\u00f4ng t\u00ecm th\u1ea5y s\u00e1ch ID: {id}", 404);
+    return book is null
+      ? throw new AppException($"Kh\u00f4ng t\u00ecm th\u1ea5y s\u00e1ch ID: {id}", 404)
+      : (book.Book, book.RowVersion);
   }
 
-  public async Task<BookDto> UpdateAsync(int id, UpdateBookRequest request, CancellationToken ct = default) {
+  public async Task<(BookDto Book, uint RowVersion)> UpdateAsync(
+    int id,
+    UpdateBookRequest request,
+    CancellationToken ct = default
+  ) {
     await using var transaction = await unitOfWork.BeginTransactionAsync(ct);
 
     try {
@@ -103,7 +111,6 @@ public class BookService(
     return new BookDto(
       book.Id,
       book.Title,
-      book.RowVersion,
       book.Categories
         .OrderBy(category => category.Name)
         .Select(category => new CategoryDto(category.Id, category.Name))

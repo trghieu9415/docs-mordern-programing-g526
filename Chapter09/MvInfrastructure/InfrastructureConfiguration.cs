@@ -1,38 +1,48 @@
-﻿using FluentValidation;
+using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using MvApplication;
 using MvApplication.Behaviors;
-using MvApplication.Options;
 using MvApplication.Ports;
 using MvInfrastructure.Adapters;
-using MvInfrastructure.Store;
+using MvInfrastructure.Configuration;
+using MvInfrastructure.Data;
+using MvInfrastructure.Http;
+using MvInfrastructure.Payment;
 
 namespace MvInfrastructure;
 
 public static class InfrastructureConfiguration {
   public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config) {
-    services.AddApplication();
+    AddApplication(services);
 
-    services.AddOptions<ProductOptions>()
-      .Bind(config.GetSection(ProductOptions.SectionName))
-      .ValidateDataAnnotations()
-      .ValidateOnStart();
+    services.AddOptions<EmailOptions>().Bind(config.GetSection(EmailOptions.SectionName)).ValidateOnStart();
+    services.AddOptions<StripeOptions>().Bind(config.GetSection(StripeOptions.SectionName)).ValidateOnStart();
+    services.AddOptions<PayPalOptions>().Bind(config.GetSection(PayPalOptions.SectionName)).ValidateOnStart();
 
-    services.AddSingleton(resolver =>
-      resolver.GetRequiredService<IOptions<ProductOptions>>().Value);
+    services.AddDbContext<TicketingDbContext>(options =>
+      options.UseSqlite(config.GetConnectionString("TicketingDb")));
 
+    services.AddHttpClient("PayPalApi", client => {
+        var payPalOptions = config.GetSection(PayPalOptions.SectionName).Get<PayPalOptions>() ?? new PayPalOptions();
+        client.BaseAddress = new Uri(payPalOptions.BaseUrl.TrimEnd('/'));
+      })
+      .AddPolicyHandler((serviceProvider, _) => HttpClientPolicies.CreateRetryPolicy(serviceProvider, "PayPalApi"))
+      .AddPolicyHandler((serviceProvider, _) => HttpClientPolicies.CreateCircuitBreakerPolicy(serviceProvider, "PayPalApi"));
 
     services.AddSingleton(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
-    services.AddScoped<IProductManager, ProductManager>();
-
-    services.AddSingleton<ProductStore>();
+    services.AddScoped<IEventRepository, EventRepository>();
+    services.AddScoped<ITicketOrderRepository, TicketOrderRepository>();
+    services.AddScoped<IEmailService, SmtpEmailService>();
+    services.AddScoped<StripePaymentService>();
+    services.AddScoped<PayPalPaymentService>();
+    services.AddScoped<IPaymentServiceFactory, PaymentServiceFactory>();
 
     return services;
   }
 
-  private static IServiceCollection AddApplication(this IServiceCollection services) {
+  private static void AddApplication(IServiceCollection services) {
     var applicationAssembly = typeof(IApplicationMarker).Assembly;
 
     services.AddMediatR(cfg => {
@@ -41,9 +51,6 @@ public static class InfrastructureConfiguration {
     });
 
     services.AddValidatorsFromAssembly(applicationAssembly);
-    services.AddAutoMapper(_ => {}, applicationAssembly);
-
-    services.AddScoped(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
-    return services;
+    services.AddAutoMapper(_ => { }, applicationAssembly);
   }
 }

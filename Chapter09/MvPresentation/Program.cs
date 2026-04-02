@@ -1,6 +1,7 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using MvInfrastructure;
+using MvInfrastructure.Data;
 using MvPresentation.Extensions;
 using MvPresentation.Middlewares;
 using Swashbuckle.AspNetCore.SwaggerUI;
@@ -30,18 +31,19 @@ builder.Services.AddSwaggerDocument();
 
 var app = builder.Build();
 
+await DbInitializer.EnsureInitializedAsync(app.Services);
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment()) {
   app.UseSwagger();
   app.UseSwaggerUI(c => {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Product API v1");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Event Ticketing API v1");
     c.DocExpansion(DocExpansion.None);
   });
 }
 
 app.UseHttpsRedirection();
-// app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

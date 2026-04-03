@@ -7,6 +7,7 @@ namespace MvPresentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[ApiExplorerSettings(GroupName = "v1")]
 public class ShowtimesController(IMediator mediator) : ControllerBase {
   [HttpGet("{id:guid}")]
   public async Task<IActionResult> GetById(Guid id, CancellationToken ct) {
@@ -17,13 +18,6 @@ public class ShowtimesController(IMediator mediator) : ControllerBase {
 
   [HttpGet("search")]
   public async Task<IActionResult> Search([FromQuery] SearchMoviesQuery query, CancellationToken ct) {
-    var result = await mediator.Send(query, ct);
-    return Ok(result);
-  }
-
-  [HttpGet("{id:guid}/details")]
-  public async Task<IActionResult> GetFullDetails(Guid id, CancellationToken ct) {
-    var query = new GetShowtimeByIdQuery(id);
     var result = await mediator.Send(query, ct);
     return Ok(result);
   }

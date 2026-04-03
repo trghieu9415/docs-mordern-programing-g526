@@ -3,5 +3,6 @@
 public record ShowtimeDto(
   Guid Id,
   string MovieTitle,
-  DateTime StartTime
+  DateTime StartTime,
+  List<string> BookedSeats
 );

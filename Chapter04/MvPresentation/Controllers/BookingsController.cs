@@ -7,6 +7,7 @@ namespace MvPresentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[ApiExplorerSettings(GroupName = "v1")]
 public class BookingsController(IMediator mediator) : ControllerBase {
   [HttpPost("book")]
   [ServiceFilter(typeof(PerformanceMonitorFilter))]

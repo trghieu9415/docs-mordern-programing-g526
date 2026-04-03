@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
+using L2.Application.Exceptions;
 using MediatR;
-using ValidationException = MvApplication.Exceptions.ValidationException;
 
 namespace MvApplication.Behaviors;
 
@@ -36,6 +36,6 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
       .ToList();
 
 
-    throw new ValidationException(errorMessages);
+    throw new InvalidInputException(errorMessages);
   }
 }

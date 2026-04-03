@@ -19,5 +19,9 @@ public class PerformanceMonitorFilter(ILogger<PerformanceMonitorFilter> logger) 
         methodName, path, elapsedMilliseconds
       );
     }
+
+    if (!context.HttpContext.Response.HasStarted) {
+      context.HttpContext.Response.Headers.Append("X-Server-Execution-Time-ms", elapsedMilliseconds.ToString());
+    }
   }
 }

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using MvInfrastructure;
 using MvPresentation.Exceptions;
 using MvPresentation.Extensions;
+using MvPresentation.Filters;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,10 @@ builder.Services.AddRouting(options => {
 builder.Services.AddSwaggerDocument();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
+builder.Services.AddControllers(options => {
+  options.Filters.Add<PerformanceMonitorFilter>();
+});
 
 var app = builder.Build();
 

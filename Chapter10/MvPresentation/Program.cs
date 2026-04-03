@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using MvInfrastructure;
 using MvPresentation.Extensions;
-using MvPresentation.Middlewares;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,7 +29,6 @@ builder.Services.AddSwaggerDocument();
 
 var app = builder.Build();
 
-app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment()) {
   app.UseSwagger();
@@ -41,7 +39,7 @@ if (app.Environment.IsDevelopment()) {
 }
 
 app.UseHttpsRedirection();
-// app.UseAuthorization();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

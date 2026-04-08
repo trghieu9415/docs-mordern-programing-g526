@@ -1,14 +1,26 @@
-﻿using MediatR;
+using MediatR;
 using MvApplication.Ports;
 using MvDomain.Entities;
 
 namespace MvApplication.UseCases.CreateProduct;
 
-public class CreateProductHandler(IProductManager productManager)
+public class CreateProductHandler(IProductManager productManager, ICacheStorage cache)
   : IRequestHandler<CreateProductCommand, Guid> {
-  public async Task<Guid> Handle(CreateProductCommand request, CancellationToken cancellationToken) {
+  private const int CachedPageSize = 20;
+
+  public async Task<Guid> Handle(CreateProductCommand request, CancellationToken ct) {
     var product = Product.Create(request.Name, request.Price, request.ImageUrl);
-    await productManager.AddAsync(product, cancellationToken);
+    await productManager.AddAsync(product, ct);
+
+    // Kiểm tra xem sản phẩm mới có nằm trong 20 sản phẩm đầu không
+    var (firstProducts, _) = await productManager.GetPagedAsync(1, CachedPageSize, ct);
+    var isInFirstPage = firstProducts.Any(p => p.Id == product.Id);
+
+    // Chỉ invalidate cache nếu sản phẩm mới nằm trong top 20
+    if (isInFirstPage) {
+      await cache.RemoveAsync("products:first20", ct);
+    }
+
     return product.Id;
   }
 }

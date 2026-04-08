@@ -1,9 +1,10 @@
 using FluentValidation;
 using MediatR;
+using MvApplication.Abstractions;
 
 namespace MvApplication.UseCases.Login;
 
-public record LoginCommand(string Username, string Password) : IRequest<LoginResult>;
+public record LoginCommand(string Username, string Password) : IRequest<LoginResult>, ITransactional;
 
 public record LoginResult(string Token);
 

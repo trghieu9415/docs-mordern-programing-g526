@@ -27,6 +27,7 @@ public static class InfrastructureConfiguration {
 
     services.RegisterOption<CinemaSettings>(config);
     services.RegisterOption<JwtSettings>(config);
+    services.RegisterOption<RedisOptions>(config);
 
     return services;
   }

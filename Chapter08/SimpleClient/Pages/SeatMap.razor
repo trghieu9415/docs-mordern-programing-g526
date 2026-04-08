@@ -1,10 +1,10 @@
 @page "/seatmap"
 @page "/seatmap/{ShowtimeId:guid}"
-@using System.ComponentModel.DataAnnotations
-@using Microsoft.AspNetCore.SignalR.Client
 @inject CinemaApiClient ApiClient
 @inject SessionService Session
 @inject NavigationManager Navigation
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
 
 <PageTitle>SeatMap</PageTitle>
@@ -14,31 +14,25 @@
     <div>
       <span class="section-kicker">Realtime seats</span>
       <h1>SeatMap</h1>
-      <p class="section-subtitle">Giữ ghế qua `CinemaHub`, cập nhật trạng thái realtime và thanh toán giả lập cho `BookSeats` ngay trên trang.</p>
+      <p class="section-subtitle">Giữ ghế qua `CinemaHub`, cập nhật trạng thái realtime và thanh toán giả lập cho
+        `BookSeats` ngay trên trang.</p>
     </div>
     <NavLink class="secondary-btn" href="/getshowtime">Quay lại GetShowtime</NavLink>
   </div>
 
-  @if (!string.IsNullOrWhiteSpace(_error))
-  {
+  @if (!string.IsNullOrWhiteSpace(_error)) {
     <div class="status-banner status-error">@_error</div>
   }
 
-  @if (!string.IsNullOrWhiteSpace(_infoMessage))
-  {
+  @if (!string.IsNullOrWhiteSpace(_infoMessage)) {
     <div class="status-banner status-info">@_infoMessage</div>
   }
 
-  @if (_loading)
-  {
+  @if (_loading) {
     <div class="empty-state">Đang chuẩn bị sơ đồ ghế và kết nối realtime...</div>
-  }
-  else if (_showtime is null)
-  {
+  } else if (_showtime is null) {
     <div class="empty-state">Không tìm thấy lịch chiếu tương ứng.</div>
-  }
-  else
-  {
+  } else {
     <div class="seat-layout">
       <div class="seat-stage">
         <div class="movie-panel">
@@ -64,7 +58,7 @@
             </div>
             <div>
               <span class="meta-label">Nhịp realtime</span>
-              <strong>@($"{Math.Max(_audienceCount, 0)} người dùng khác")</strong>
+              <strong>@($"{Math.Max(_audienceCount, 0)} người đang xem")</strong>
             </div>
           </div>
 
@@ -78,12 +72,10 @@
           </div>
 
           <div class="seat-grid">
-            @foreach (var row in SeatRows)
-            {
+            @foreach (var row in SeatRows) {
               <div class="seat-row">
                 <span class="row-label">@row</span>
-                @foreach (var column in SeatColumns)
-                {
+                @foreach (var column in SeatColumns) {
                   var seatCode = $"{row}{column}";
                   <button
                     class="@GetSeatClass(seatCode)"
@@ -102,15 +94,11 @@
             <span class="section-kicker">Selection</span>
             <h2>Ghế đang giữ</h2>
 
-            @if (_selectedSeats.Count == 0)
-            {
+            @if (_selectedSeats.Count == 0) {
               <p class="muted-copy">Chọn ghế trực tiếp trên sơ đồ để bắt đầu thanh toán.</p>
-            }
-            else
-            {
+            } else {
               <div class="selected-seat-list">
-                @foreach (var seat in _selectedSeats.OrderBy(x => x))
-                {
+                @foreach (var seat in _selectedSeats.OrderBy(x => x)) {
                   <button class="seat-tag" @onclick="() => ToggleSeatAsync(seat)">@seat</button>
                 }
               </div>
@@ -126,17 +114,18 @@
             </div>
 
             <div class="cta-stack">
-              <button class="primary-btn wide-btn" @onclick="OpenPayment" disabled="@(!_hubReady || _selectedSeats.Count == 0)">
+              <button class="primary-btn wide-btn" @onclick="OpenPayment"
+                      disabled="@(!_hubReady || _selectedSeats.Count == 0)">
                 Mở cửa sổ thanh toán
               </button>
-              <button class="secondary-btn wide-btn" @onclick="ReleaseAllSelectedAsync" disabled="@(_selectedSeats.Count == 0)">
+              <button class="secondary-btn wide-btn" @onclick="ReleaseAllSelectedAsync"
+                      disabled="@(_selectedSeats.Count == 0)">
                 Bỏ toàn bộ ghế đang giữ
               </button>
             </div>
           </div>
 
-          @if (_latestTicket is not null)
-          {
+          @if (_latestTicket is not null) {
             <div class="booking-card success-card">
               <span class="section-kicker">Latest booking</span>
               <h2>Thanh toán thành công</h2>
@@ -156,8 +145,7 @@
   }
 </section>
 
-@if (_showPaymentModal && _showtime is not null)
-{
+@if (_showPaymentModal && _showtime is not null) {
   <div class="modal-backdrop" @onclick="ClosePayment">
     <div class="payment-modal" @onclick:stopPropagation="true">
       <div class="modal-header">
@@ -168,31 +156,30 @@
         <button class="modal-close" @onclick="ClosePayment" disabled="@_bookingBusy">×</button>
       </div>
 
-      @if (!string.IsNullOrWhiteSpace(_paymentError))
-      {
+      @if (!string.IsNullOrWhiteSpace(_paymentError)) {
         <div class="status-banner status-error">@_paymentError</div>
       }
 
       <EditForm Model="_paymentModel" OnValidSubmit="BookSeatsAsync">
-        <DataAnnotationsValidator />
+        <DataAnnotationsValidator/>
 
         <div class="payment-grid">
           <div class="form-field">
             <label for="payment-name">Chủ thẻ</label>
-            <InputText id="payment-name" class="form-input" @bind-Value="_paymentModel.CardHolder" />
-            <ValidationMessage For="@(() => _paymentModel.CardHolder)" />
+            <InputText id="payment-name" class="form-input" @bind-Value="_paymentModel.CardHolder"/>
+            <ValidationMessage For="@(() => _paymentModel.CardHolder)"/>
           </div>
 
           <div class="form-field">
             <label for="payment-card">Số thẻ</label>
-            <InputText id="payment-card" class="form-input" @bind-Value="_paymentModel.CardNumber" />
-            <ValidationMessage For="@(() => _paymentModel.CardNumber)" />
+            <InputText id="payment-card" class="form-input" @bind-Value="_paymentModel.CardNumber"/>
+            <ValidationMessage For="@(() => _paymentModel.CardNumber)"/>
           </div>
 
           <div class="form-field">
             <label for="payment-phone">Số điện thoại</label>
-            <InputText id="payment-phone" class="form-input" @bind-Value="_paymentModel.PhoneNumber" />
-            <ValidationMessage For="@(() => _paymentModel.PhoneNumber)" />
+            <InputText id="payment-phone" class="form-input" @bind-Value="_paymentModel.PhoneNumber"/>
+            <ValidationMessage For="@(() => _paymentModel.PhoneNumber)"/>
           </div>
 
           <div class="form-field">
@@ -235,8 +222,7 @@
   private static readonly string[] SeatRows = ["A", "B", "C", "D", "E", "F", "G", "H"];
   private static readonly int[] SeatColumns = Enumerable.Range(1, 8).ToArray();
 
-  [Parameter]
-  public Guid? ShowtimeId { get; set; }
+  [Parameter] public Guid? ShowtimeId { get; set; }
 
   private readonly HashSet<string> _selectedSeats = new(StringComparer.OrdinalIgnoreCase);
   private readonly HashSet<string> _heldSeats = new(StringComparer.OrdinalIgnoreCase);
@@ -562,4 +548,5 @@
       PaymentMethod = "Banking";
     }
   }
+
 }

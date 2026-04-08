@@ -6,6 +6,11 @@
     margin-bottom: 1.2rem;
 }
 
+.brand-box strong {
+    color: var(--text);
+    font-size: 1.05rem;
+}
+
 .brand-tag {
     display: inline-flex;
     align-items: center;
@@ -22,10 +27,10 @@
 .menu-toggle {
     display: none;
     padding: 0.6rem 0.9rem;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--line);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.04);
-    color: #edf4ff;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--text);
 }
 
 .nav-stack {
@@ -37,20 +42,21 @@
 .nav-entry {
     padding: 0.88rem 1rem;
     border-radius: 18px;
-    color: #dce8fb;
+    border: 1px solid transparent;
+    color: #4c5f7a;
     transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-entry:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text);
     transform: translateX(2px);
 }
 
 .nav-entry.active {
-    background: rgba(255, 127, 80, 0.16);
-    color: #fff2ec;
-    border: 1px solid rgba(255, 127, 80, 0.22);
+    background: rgba(255, 138, 91, 0.14);
+    color: #a85432;
+    border: 1px solid rgba(255, 138, 91, 0.22);
 }
 
 @media (max-width: 860px) {

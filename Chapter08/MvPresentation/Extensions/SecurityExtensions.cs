@@ -31,7 +31,7 @@ public static class SecurityExtensions {
 
         var userId = claims?.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (
+        if ( 
           string.IsNullOrEmpty(userId) ||
           !Guid.TryParse(userId, out _)
         ) {

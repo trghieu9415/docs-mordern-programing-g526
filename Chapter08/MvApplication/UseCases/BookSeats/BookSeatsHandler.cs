@@ -15,14 +15,13 @@ public class BookSeatsHandler(
     if (heldSeats is null || heldSeats.HeldSeats.Count == 0) {
       throw new WorkflowException("Không có ghế chọn để thanh toán");
     }
-
+    
     var ticket = await bookingService.BookTicketAsync(
       request.ShowtimeId, request.UserId, heldSeats.HeldSeats,
       ct
     );
 
     await showtimeNotifier.NotifySeatSoldAsync(request.ShowtimeId, ticket.SeatCodes, ct);
-
     return new BookSeatsResult(new TicketDto(ticket.ShowtimeId, ticket.SeatCodes, ticket.TotalPrice));
   }
 }

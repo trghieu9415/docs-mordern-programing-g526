@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MvInfrastructure;
+using MvInfrastructure.Persistence;
 using MvPresentation.Extensions;
 using MvPresentation.Middlewares;
 using Swashbuckle.AspNetCore.SwaggerUI;
@@ -29,6 +30,12 @@ builder.Services.AddRouting(options => {
 builder.Services.AddSwaggerDocument();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope()) {
+  var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+  await db.Database.EnsureCreatedAsync();
+  await AppDbInitializer.SeedAsync(db);
+}
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

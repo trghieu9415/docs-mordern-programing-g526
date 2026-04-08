@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -9,7 +10,7 @@ using MvApplication.Ports;
 using MvInfrastructure.Adapters;
 using MvInfrastructure.Extensions;
 using MvInfrastructure.Options;
-using MvInfrastructure.Store;
+using MvInfrastructure.Persistence;
 
 namespace MvInfrastructure;
 
@@ -27,15 +28,25 @@ public static class InfrastructureConfiguration {
       .ValidateDataAnnotations()
       .ValidateOnStart();
 
+    services.AddOptions<FlashSaleDemoOptions>()
+      .Bind(config.GetSection(FlashSaleDemoOptions.SectionName));
+
     services.AddSingleton(resolver =>
       resolver.GetRequiredService<IOptions<ProductOptions>>().Value);
 
     services.AddDistributedInfrastructure();
 
+    var pgConn = config.GetConnectionString("PostgreSQL");
+    services.AddDbContext<AppDbContext>(opts => {
+      if (string.IsNullOrWhiteSpace(pgConn)) {
+        opts.UseInMemoryDatabase("flash-sale-db");
+      } else {
+        opts.UseNpgsql(pgConn);
+      }
+    });
+
     services.AddSingleton(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
     services.AddScoped<IProductManager, ProductManager>();
-
-    services.AddSingleton<ProductStore>();
 
     return services;
   }

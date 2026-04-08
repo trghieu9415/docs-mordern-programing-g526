@@ -2,7 +2,6 @@ using AutoMapper;
 using MediatR;
 using MvApplication.DTOs;
 using MvApplication.Models;
-using MvApplication.Options;
 using MvApplication.Ports;
 
 namespace MvApplication.UseCases.GetProducts;
@@ -10,7 +9,6 @@ namespace MvApplication.UseCases.GetProducts;
 public class GetProductsHandler(
   IProductManager manager,
   ICacheStorage cache,
-  ProductOptions options,
   IMapper mapper
 ) : IRequestHandler<GetProductsQuery, GetProductsResult> {
   private const string CacheKey = "products:first20";

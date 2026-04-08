@@ -1,4 +1,4 @@
-﻿using MvDomain.Entities;
+using MvDomain.Entities;
 
 namespace MvApplication.Ports;
 
@@ -8,4 +8,6 @@ public interface IProductManager {
   Task AddAsync(Product product, CancellationToken ct = default);
   Task UpdateAsync(Product product, CancellationToken ct = default);
   Task DeleteAsync(Guid id, CancellationToken ct = default);
+  Task<Order> CreateOrderAsync(Guid productId, string userId, int quantity, CancellationToken ct = default);
+  Task<IReadOnlyList<Order>> GetOrdersByProductIdAsync(Guid productId, CancellationToken ct = default);
 }

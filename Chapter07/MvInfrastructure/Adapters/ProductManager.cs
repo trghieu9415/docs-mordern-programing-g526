@@ -1,46 +1,57 @@
-﻿using MvApplication.Ports;
+using MvApplication.Ports;
+using Microsoft.EntityFrameworkCore;
 using MvDomain.Entities;
-using MvInfrastructure.Store;
+using MvInfrastructure.Persistence;
 
 namespace MvInfrastructure.Adapters;
 
-public class ProductManager(ProductStore store) : IProductManager {
+public class ProductManager(AppDbContext db) : IProductManager {
   public async Task<Product?> GetByIdAsync(Guid id, CancellationToken ct) {
-    return await Task.FromResult(store.Products.FirstOrDefault(p => p.Id == id));
+    return await db.Products.FirstOrDefaultAsync(p => p.Id == id, ct);
   }
 
   public async Task<(IList<Product> Products, int Total)> GetPagedAsync(int page, int pageSize, CancellationToken ct) {
-    var total = store.Products.Count;
-    var items = store.Products
+    var total = await db.Products.CountAsync(ct);
+    var items = await db.Products
+      .OrderBy(p => p.Name)
       .Skip((page - 1) * pageSize)
       .Take(pageSize)
-      .ToList();
+      .ToListAsync(ct);
 
-    return await Task.FromResult((items.ToList(), total));
+    return (items, total);
   }
 
 
   public async Task AddAsync(Product product, CancellationToken ct) {
-    store.Products.Add(product);
-    await Task.CompletedTask;
+    db.Products.Add(product);
+    await db.SaveChangesAsync(ct);
   }
 
   public async Task UpdateAsync(Product product, CancellationToken ct) {
-    var existing = store.Products.FirstOrDefault(p => p.Id == product.Id);
-    if (existing != null) {
-      store.Products.Remove(existing);
-      store.Products.Add(product);
-    }
-
-    await Task.CompletedTask;
+    db.Products.Update(product);
+    await db.SaveChangesAsync(ct);
   }
 
   public async Task DeleteAsync(Guid id, CancellationToken ct) {
-    var existing = store.Products.FirstOrDefault(p => p.Id == id);
+    var existing = await db.Products.FirstOrDefaultAsync(p => p.Id == id, ct);
     if (existing != null) {
-      store.Products.Remove(existing);
+      db.Products.Remove(existing);
+      await db.SaveChangesAsync(ct);
     }
+  }
 
-    await Task.CompletedTask;
+  public async Task<Order> CreateOrderAsync(Guid productId, string userId, int quantity, CancellationToken ct) {
+    var order = Order.Create(productId, userId, quantity);
+    db.Orders.Add(order);
+    await db.SaveChangesAsync(ct);
+    return order;
+  }
+
+  public async Task<IReadOnlyList<Order>> GetOrdersByProductIdAsync(Guid productId, CancellationToken ct) {
+    return await db.Orders
+      .AsNoTracking()
+      .Where(o => o.ProductId == productId)
+      .OrderBy(o => o.CreatedAt)
+      .ToListAsync(ct);
   }
 }

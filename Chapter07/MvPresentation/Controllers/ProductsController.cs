@@ -1,8 +1,10 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using MvApplication.UseCases.CreateProduct;
 using MvApplication.UseCases.GetProduct;
+using MvApplication.UseCases.GetProductPurchaseProof;
 using MvApplication.UseCases.GetProducts;
+using MvApplication.UseCases.PurchaseProduct;
 using MvApplication.UseCases.RemoveProduct;
 using MvApplication.UseCases.UpdateProduct;
 using MvPresentation.Response;
@@ -25,6 +27,13 @@ public class ProductsController(IMediator mediator) : ControllerBase {
     return AppResponse.Success(result.Product);
   }
 
+  /// <summary>Minh chung sau test dong thoi: ton kho (khong am) va danh sach don hang.</summary>
+  [HttpGet("{id:guid}/purchase-proof")]
+  public async Task<IActionResult> GetPurchaseProof(Guid id) {
+    var result = await mediator.Send(new GetProductPurchaseProofQuery(id));
+    return AppResponse.Success(result);
+  }
+
   [HttpPost]
   public async Task<IActionResult> CreateProduct([FromBody] CreateProductCommand command) {
     var productId = await mediator.Send(command);
@@ -43,4 +52,12 @@ public class ProductsController(IMediator mediator) : ControllerBase {
     await mediator.Send(new RemoveProductCommand(id));
     return AppResponse.Success("Xóa sản phẩm thành công");
   }
+
+  [HttpPost("{id:guid}/orders")]
+  public async Task<IActionResult> Purchase(Guid id, [FromBody] PurchaseProductBody body) {
+    var result = await mediator.Send(new PurchaseProductCommand(id, body.UserId, body.Quantity));
+    return AppResponse.Success(result, "Đặt mua thành công");
+  }
+
+  public record PurchaseProductBody(string UserId, int Quantity);
 }

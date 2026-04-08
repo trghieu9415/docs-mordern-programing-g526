@@ -12,11 +12,9 @@ public class CreateProductHandler(IProductManager productManager, ICacheStorage 
     var product = Product.Create(request.Name, request.Price, request.ImageUrl);
     await productManager.AddAsync(product, ct);
 
-    // Kiểm tra xem sản phẩm mới có nằm trong 20 sản phẩm đầu không
     var (firstProducts, _) = await productManager.GetPagedAsync(1, CachedPageSize, ct);
     var isInFirstPage = firstProducts.Any(p => p.Id == product.Id);
 
-    // Chỉ invalidate cache nếu sản phẩm mới nằm trong top 20
     if (isInFirstPage) {
       await cache.RemoveAsync("products:first20", ct);
     }

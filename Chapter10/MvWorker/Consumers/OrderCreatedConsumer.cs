@@ -10,8 +10,8 @@ public class OrderCreatedConsumer(
   IBackgroundTaskQueue taskQueue
 ) : IConsumer<OrderCreatedEvent> {
   public async Task Consume(ConsumeContext<OrderCreatedEvent> context) {
-    // Console.WriteLine("Dòng này sẽ không bao giờ in ra nè!");
-    // throw new Exception("Chặn lại để soi!");
+    // Console.WriteLine($"Retry Lần thứ {context.GetRetryAttempt()} - Thời gian: {DateTime.Now}");
+    // throw new Exception($"Test exception - At: {DateTime.Now} - Order: {context.Message.OrderId}");
     var msg = context.Message;
 
     await taskQueue.QueueAsync<IEmailService>((eS, ctx) =>

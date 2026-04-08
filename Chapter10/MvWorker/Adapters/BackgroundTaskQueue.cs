@@ -27,6 +27,12 @@ public class BackgroundTaskQueue : IBackgroundTaskQueue {
     }
   }
 
+  public async ValueTask QueueAsync(Func<CancellationToken, Task> workItem) {
+    await _queue.Writer.WriteAsync(async (token, serviceProvider) => {
+      await workItem(token);
+    });
+  }
+
   public async ValueTask<Func<CancellationToken, IServiceProvider, ValueTask>> DequeueAsync(CancellationToken ct) {
     return await _queue.Reader.ReadAsync(ct);
   }

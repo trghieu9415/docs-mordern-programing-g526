@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddWebApiDefaults();
-builder.Services.AddSignalRAdapters();
+builder.Services.AddSignalRAdapters(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddSwaggerDocument();
 builder.Services.AddCors(options => {
@@ -34,6 +34,7 @@ builder.Services.AddScoped<PerformanceMonitorFilter>();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseCors("SimpleClient");
 
 if (app.Environment.IsDevelopment()) {
   app.UseSwagger();
@@ -44,7 +45,6 @@ if (app.Environment.IsDevelopment()) {
 }
 
 app.UseHttpsRedirection();
-app.UseCors("SimpleClient");
 app.UseAuthentication();
 app.UseAuthorization();
 

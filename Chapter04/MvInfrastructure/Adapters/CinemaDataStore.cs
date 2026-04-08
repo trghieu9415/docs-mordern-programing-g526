@@ -11,7 +11,7 @@ public class CinemaDataStore : ICinemaDataStore {
   }
 
   public async Task<Showtime?> GetShowtimeByIdAsync(Guid id, CancellationToken ct) {
-    await Task.Delay(500, ct);
+    await Task.Delay(2000, ct);
     return _showtimes.FirstOrDefault(s => s.Id == id);
   }
 

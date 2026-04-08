@@ -8,6 +8,5 @@ public record EventDto(
   DateTime StartAt,
   decimal TicketPrice,
   int Capacity,
-  int AvailableTickets,
-  string? PosterUrl
+  int AvailableTickets
 );

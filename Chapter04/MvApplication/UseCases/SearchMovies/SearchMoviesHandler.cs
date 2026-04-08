@@ -15,7 +15,7 @@ public class SearchMoviesHandler(
         s.MovieTitle.Contains(request.SearchKey, StringComparison.CurrentCultureIgnoreCase))
       .Skip((request.Page - 1) * request.Size)
       .Take(request.Size)
-      .Select(s => new ShowtimeDto(s.Id, s.MovieTitle, s.StartTime))
+      .Select(s => new ShowtimeDto(s.Id, s.MovieTitle, s.StartTime, []))
       .ToList();
     return new SearchMoviesResult(showtimes);
   }

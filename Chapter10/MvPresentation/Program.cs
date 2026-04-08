@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using MvInfrastructure;
 using MvPresentation.Extensions;
-using MvPresentation.Middlewares;
+using MvWorker;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogCustom();
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddWorker(builder.Configuration);
 
 builder.Services.AddControllers()
   .ConfigureApiBehaviorOptions(options => {
@@ -26,11 +27,14 @@ builder.Services.AddRouting(options => {
   options.LowercaseQueryStrings = true;
 });
 
+builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
+
+
 builder.Services.AddSwaggerDocument();
 
 var app = builder.Build();
 
-app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment()) {
   app.UseSwagger();
@@ -41,7 +45,7 @@ if (app.Environment.IsDevelopment()) {
 }
 
 app.UseHttpsRedirection();
-// app.UseAuthorization();
+app.UseAuthorization();
 app.MapControllers();
 
 app.Run();

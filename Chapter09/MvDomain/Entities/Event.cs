@@ -1,4 +1,4 @@
-﻿using MvDomain.Exceptions;
+using MvDomain.Exceptions;
 
 namespace MvDomain.Entities;
 
@@ -13,7 +13,6 @@ public class Event {
   public decimal TicketPrice { get; private set; }
   public int Capacity { get; private set; }
   public int AvailableTickets { get; private set; }
-  public string? PosterUrl { get; private set; }
   public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
 
   public static Event Create(
@@ -41,10 +40,6 @@ public class Event {
       Capacity = capacity,
       AvailableTickets = capacity
     };
-  }
-
-  public void UpdatePoster(string posterUrl) {
-    PosterUrl = posterUrl;
   }
 
   public void ReserveTickets(int quantity) {

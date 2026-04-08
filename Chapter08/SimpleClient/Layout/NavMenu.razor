@@ -1,0 +1,25 @@
+﻿<div class="brand-box">
+  <div>
+    <span class="brand-tag">Mv</span>
+    <strong>Mv Cinema</strong>
+  </div>
+  <button class="menu-toggle" title="Navigation menu" @onclick="ToggleNavMenu">Menu</button>
+</div>
+
+<nav class="@NavMenuCssClass">
+  <NavLink class="nav-entry" href="" Match="NavLinkMatch.All">Overview</NavLink>
+  <NavLink class="nav-entry" href="/login">Login</NavLink>
+  <NavLink class="nav-entry" href="/register">Register</NavLink>
+  <NavLink class="nav-entry" href="/getshowtime">GetShowtime</NavLink>
+  <NavLink class="nav-entry" href="/seatmap">SeatMap</NavLink>
+</nav>
+
+@code {
+  private bool collapseNavMenu = true;
+
+  private string NavMenuCssClass => collapseNavMenu ? "nav-stack collapsed" : "nav-stack";
+
+  private void ToggleNavMenu() {
+    collapseNavMenu = !collapseNavMenu;
+  }
+}

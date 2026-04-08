@@ -1,0 +1,114 @@
+@page "/getshowtime"
+@page "/showtimes"
+@inject CinemaApiClient ApiClient
+@inject SessionService Session
+@inject NavigationManager Navigation
+
+<PageTitle>GetShowtime</PageTitle>
+
+<section class="page-section">
+  <div class="section-header">
+    <div>
+      <span class="section-kicker">Schedule browser</span>
+      <h1>GetShowtime</h1>
+      <p class="section-subtitle">Dữ liệu lấy trực tiếp từ `ShowtimesController`, sau đó điều hướng sang `SeatMap` để giữ ghế.</p>
+    </div>
+    <button class="secondary-btn" @onclick="LoadShowtimesAsync" disabled="@_loading">Tải lại</button>
+  </div>
+
+  @if (!Session.IsAuthenticated)
+  {
+    <div class="status-banner status-info">
+      Bạn chưa đăng nhập. Vẫn xem được lịch chiếu, nhưng để chọn ghế và thanh toán cần vào `Login` hoặc `Register`.
+    </div>
+  }
+
+  @if (!string.IsNullOrWhiteSpace(_error))
+  {
+    <div class="status-banner status-error">@_error</div>
+  }
+
+  @if (_loading)
+  {
+    <div class="empty-state">Đang tải danh sách lịch chiếu...</div>
+  }
+  else if (_showtimes.Count == 0)
+  {
+    <div class="empty-state">Hiện chưa có lịch chiếu nào.</div>
+  }
+  else
+  {
+    <div class="showtime-grid">
+      @foreach (var showtime in _showtimes)
+      {
+        <article class="showtime-card">
+          <div class="showtime-card-head">
+            <span class="showtime-chip">@GetDayLabel(showtime.StartTime)</span>
+            <span class="showtime-chip muted-chip">@GetTimeLabel(showtime.StartTime)</span>
+          </div>
+
+          <h2>@showtime.MovieTitle</h2>
+          <p>@showtime.StartTime.ToString("dddd, dd/MM/yyyy")</p>
+
+          <div class="showtime-meta">
+            <div>
+              <span class="meta-label">Giờ chiếu</span>
+              <strong>@showtime.StartTime.ToString("HH:mm")</strong>
+            </div>
+            <div>
+              <span class="meta-label">Suất</span>
+              <strong>@(showtime.StartTime.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? "Cuối tuần" : "Ngày thường")</strong>
+            </div>
+          </div>
+
+          <button class="primary-btn" @onclick="() => GoToSeatMap(showtime.Id)">
+            @(Session.IsAuthenticated ? "Mở SeatMap" : "Đăng nhập để đặt ghế")
+          </button>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+@code {
+  private List<ShowtimeItem> _showtimes = [];
+  private bool _loading = true;
+  private string? _error;
+
+  protected override async Task OnInitializedAsync() {
+    await Session.InitializeAsync();
+    await LoadShowtimesAsync();
+  }
+
+  private async Task LoadShowtimesAsync() {
+    _loading = true;
+    _error = null;
+
+    try {
+      _showtimes = (await ApiClient.GetShowtimesAsync())
+        .OrderBy(x => x.StartTime)
+        .ToList();
+    } catch (Exception ex) {
+      _error = ex.Message;
+    } finally {
+      _loading = false;
+    }
+  }
+
+  private void GoToSeatMap(Guid showtimeId) {
+    if (!Session.IsAuthenticated) {
+      Navigation.NavigateTo("/login");
+      return;
+    }
+
+    Navigation.NavigateTo($"/seatmap/{showtimeId}");
+  }
+
+  private static string GetDayLabel(DateTime startTime) {
+    return startTime.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? "Weekend" : "Weekday";
+  }
+
+  private static string GetTimeLabel(DateTime startTime) {
+    return startTime.ToString("dd/MM - HH:mm");
+  }
+}

@@ -33,7 +33,7 @@ public class PayPalPaymentService(
           custom_id = order.Id.ToString(),
           description = $"Ve su kien {order.EventName}",
           amount = new {
-            currency_code = _options.Currency,
+            currency_code = NormalizePayPalCurrency(_options.Currency),
             value = order.TotalAmount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
           }
         }
@@ -82,7 +82,10 @@ public class PayPalPaymentService(
     var client = httpClientFactory.CreateClient("PayPalApi");
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-    using var response = await client.PostAsync($"/v2/checkout/orders/{token}/capture", new StringContent(string.Empty), ct);
+    using var response = await client.PostAsync(
+      $"/v2/checkout/orders/{token}/capture",
+      new StringContent("{}", Encoding.UTF8, "application/json"),
+      ct);
     var body = await response.Content.ReadAsStringAsync(ct);
 
     if (!response.IsSuccessStatusCode) {
@@ -230,6 +233,20 @@ public class PayPalPaymentService(
     var separator = baseUrl.Contains('?') ? '&' : '?';
     var queryString = string.Join("&", query.Select(x => $"{Uri.EscapeDataString(x.Key)}={Uri.EscapeDataString(x.Value)}"));
     return $"{baseUrl}{separator}{queryString}";
+  }
+
+  private static string NormalizePayPalCurrency(string currency) {
+    var normalized = (currency ?? string.Empty).Trim().ToUpperInvariant();
+
+    if (normalized.Contains("VN")) {
+      return "VND";
+    }
+
+    if (normalized.Contains("US")) {
+      return "USD";
+    }
+
+    return normalized;
   }
 
   private sealed class PayPalOrderResponse {

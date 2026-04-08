@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MvDomain.Entities;
 
 namespace MvInfrastructure.Data;
@@ -15,7 +15,6 @@ public class TicketingDbContext(DbContextOptions<TicketingDbContext> options) : 
       builder.Property(x => x.Description).HasMaxLength(2000).IsRequired();
       builder.Property(x => x.Venue).HasMaxLength(200).IsRequired();
       builder.Property(x => x.TicketPrice).HasColumnType("decimal(18,2)");
-      builder.Property(x => x.PosterUrl).HasMaxLength(1000);
     });
 
     modelBuilder.Entity<TicketOrder>(builder => {

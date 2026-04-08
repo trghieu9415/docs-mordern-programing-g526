@@ -19,10 +19,7 @@ public class StripePaymentService(IOptions<StripeOptions> options) : IPaymentSer
     StripeConfiguration.ApiKey = _options.SecretKey;
 
     var service = new SessionService();
-    var successUrl = BuildUrl(_options.SuccessUrl, new Dictionary<string, string> {
-      ["orderId"] = order.Id.ToString(),
-      ["sessionId"] = "{CHECKOUT_SESSION_ID}"
-    });
+    var successUrl = BuildStripeSuccessUrl(_options.SuccessUrl, order.Id);
     var cancelUrl = BuildUrl(_options.CancelUrl, new Dictionary<string, string> {
       ["orderId"] = order.Id.ToString()
     });
@@ -41,7 +38,7 @@ public class StripePaymentService(IOptions<StripeOptions> options) : IPaymentSer
         new SessionLineItemOptions {
           Quantity = order.Quantity,
           PriceData = new SessionLineItemPriceDataOptions {
-            Currency = _options.Currency,
+            Currency = NormalizeStripeCurrency(_options.Currency),
             UnitAmountDecimal = order.TotalAmount / order.Quantity * 100,
             ProductData = new SessionLineItemPriceDataProductDataOptions {
               Name = $"Ve su kien {order.EventName}"
@@ -61,6 +58,10 @@ public class StripePaymentService(IOptions<StripeOptions> options) : IPaymentSer
 
     if (!callbackData.TryGetValue("sessionId", out var sessionId) && !callbackData.TryGetValue("session_id", out sessionId)) {
       return new PaymentVerificationResult(false, null, "Thieu sessionId tu Stripe.");
+    }
+
+    if (string.Equals(sessionId, "{CHECKOUT_SESSION_ID}", StringComparison.OrdinalIgnoreCase)) {
+      return new PaymentVerificationResult(false, null, "Stripe chua thay sessionId that. Hay thanh toan tu trang checkout va de Stripe redirect ve return URL.");
     }
 
     var session = await new SessionService().GetAsync(sessionId, cancellationToken: ct);
@@ -120,6 +121,25 @@ public class StripePaymentService(IOptions<StripeOptions> options) : IPaymentSer
     var separator = baseUrl.Contains('?') ? '&' : '?';
     var queryString = string.Join("&", query.Select(x => $"{Uri.EscapeDataString(x.Key)}={Uri.EscapeDataString(x.Value)}"));
     return $"{baseUrl}{separator}{queryString}";
+  }
+
+  private static string BuildStripeSuccessUrl(string baseUrl, Guid orderId) {
+    var separator = baseUrl.Contains('?') ? '&' : '?';
+    return $"{baseUrl}{separator}orderId={Uri.EscapeDataString(orderId.ToString())}&sessionId={{CHECKOUT_SESSION_ID}}";
+  }
+
+  private static string NormalizeStripeCurrency(string currency) {
+    var normalized = (currency ?? string.Empty).Trim().ToLowerInvariant();
+
+    if (normalized.Contains("vn")) {
+      return "vnd";
+    }
+
+    if (normalized.Contains("us")) {
+      return "usd";
+    }
+
+    return normalized;
   }
 }
 

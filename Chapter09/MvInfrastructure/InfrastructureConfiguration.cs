@@ -1,6 +1,3 @@
-﻿using Amazon;
-using Amazon.Runtime;
-using Amazon.S3;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,27 +18,11 @@ public static class InfrastructureConfiguration {
     AddApplication(services);
 
     services.AddOptions<EmailOptions>().Bind(config.GetSection(EmailOptions.SectionName)).ValidateOnStart();
-    services.AddOptions<ObjectStorageOptions>().Bind(config.GetSection(ObjectStorageOptions.SectionName)).ValidateOnStart();
     services.AddOptions<StripeOptions>().Bind(config.GetSection(StripeOptions.SectionName)).ValidateOnStart();
     services.AddOptions<PayPalOptions>().Bind(config.GetSection(PayPalOptions.SectionName)).ValidateOnStart();
 
     services.AddDbContext<TicketingDbContext>(options =>
       options.UseSqlite(config.GetConnectionString("TicketingDb")));
-
-    services.AddSingleton<IAmazonS3>(serviceProvider => {
-      var storageOptions = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ObjectStorageOptions>>().Value;
-      var credentials = new BasicAWSCredentials(storageOptions.AccessKey, storageOptions.SecretKey);
-      var clientConfig = new AmazonS3Config {
-        RegionEndpoint = RegionEndpoint.GetBySystemName(storageOptions.Region),
-        ForcePathStyle = storageOptions.ForcePathStyle
-      };
-
-      if (!string.IsNullOrWhiteSpace(storageOptions.ServiceUrl)) {
-        clientConfig.ServiceURL = storageOptions.ServiceUrl;
-      }
-
-      return new AmazonS3Client(credentials, clientConfig);
-    });
 
     services.AddHttpClient("PayPalApi", client => {
         var payPalOptions = config.GetSection(PayPalOptions.SectionName).Get<PayPalOptions>() ?? new PayPalOptions();
@@ -53,7 +34,6 @@ public static class InfrastructureConfiguration {
     services.AddSingleton(typeof(IAppLogger<>), typeof(LoggerAdapter<>));
     services.AddScoped<IEventRepository, EventRepository>();
     services.AddScoped<ITicketOrderRepository, TicketOrderRepository>();
-    services.AddScoped<IStorageService, S3StorageService>();
     services.AddScoped<IEmailService, SmtpEmailService>();
     services.AddScoped<StripePaymentService>();
     services.AddScoped<PayPalPaymentService>();

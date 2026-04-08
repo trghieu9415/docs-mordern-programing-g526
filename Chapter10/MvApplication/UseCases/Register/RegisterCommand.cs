@@ -1,9 +1,11 @@
 using FluentValidation;
 using MediatR;
+using MvApplication.Abstractions;
 
 namespace MvApplication.UseCases.Register;
 
-public record RegisterCommand(string Username, string Email, string Password) : IRequest<RegisterResult>;
+public record RegisterCommand(string Username, string Email, string Password)
+  : IRequest<RegisterResult>, ITransactional;
 
 public record RegisterResult(string Token);
 

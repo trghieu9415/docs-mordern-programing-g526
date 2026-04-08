@@ -4,7 +4,7 @@ using MvApplication.Ports;
 using MvWorker.Adapters;
 using MvWorker.Extensions;
 
-namespace Mv.Worker;
+namespace MvWorker;
 
 public static class WorkerConfiguration {
   public static IServiceCollection AddWorker(this IServiceCollection services, IConfiguration config) {

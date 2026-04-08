@@ -19,7 +19,7 @@ public class MassTransitEventDispatcher(
     if (domainEntities.Count == 0) {
       return;
     }
-
+    
     var domainEvents = domainEntities
       .SelectMany(x => x.DomainEvents)
       .ToList();

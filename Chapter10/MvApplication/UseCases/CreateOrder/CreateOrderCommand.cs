@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
+using MvApplication.Abstractions;
 using MvApplication.DTOs;
 
 namespace MvApplication.UseCases.CreateOrder;
@@ -8,7 +9,7 @@ public record CreateOrderCommand(
   Guid UserId,
   string CustomerEmail,
   decimal TotalAmount
-) : IRequest<CreateOrderResult>;
+) : IRequest<CreateOrderResult>, ITransactional;
 
 public record CreateOrderResult(OrderDto Order);
 

@@ -1,12 +1,13 @@
 ﻿using FluentValidation;
 using MediatR;
+using MvApplication.Abstractions;
 
 namespace MvApplication.UseCases.UpdateUserPoint;
 
 public record UpdateUserPointCommand(
   Guid UserId,
   int Point
-) : IRequest<UpdateUserPointResult>;
+) : IRequest<UpdateUserPointResult>, ITransactional;
 
 public record UpdateUserPointResult(
   Guid UserId,

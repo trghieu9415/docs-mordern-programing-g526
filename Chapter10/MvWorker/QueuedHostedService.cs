@@ -3,7 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MvApplication.Ports;
 
-namespace Mv.Worker;
+namespace MvWorker;
 
 public class QueuedHostedService(
   IBackgroundTaskQueue taskQueue,

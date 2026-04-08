@@ -55,7 +55,7 @@ public class AppDbContext(
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
     base.OnModelCreating(modelBuilder);
 
-    // NOTE: ========== [MassTransit Outbox Entities] ==========
+    // ========== [MassTransit Outbox Entities] ==========
     modelBuilder.AddInboxStateEntity();
     modelBuilder.AddOutboxMessageEntity();
     modelBuilder.AddOutboxStateEntity();

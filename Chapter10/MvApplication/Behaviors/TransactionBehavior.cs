@@ -19,6 +19,7 @@ public class TransactionBehavior<TRequest, TResponse>(
     try {
       var response = await next();
 
+      // Dispatcher được triển khai cùng Unit of Work Pattern
       await eventDispatcher.DispatchEventsAsync(ct);
       await unitOfWork.SaveChangesAsync(ct);
       await unitOfWork.CommitTransactionAsync(ct);

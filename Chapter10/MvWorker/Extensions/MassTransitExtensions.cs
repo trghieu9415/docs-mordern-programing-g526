@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using MassTransit.Middleware;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MvApplication.Configs.Options;
@@ -29,8 +30,9 @@ public static class MassTransitExtensions {
         });
 
         cfg.UseMessageRetry(r =>
-          r.Incremental(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2))
+          r.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(16), TimeSpan.FromSeconds(2))
         );
+        
         cfg.UseCircuitBreaker(cb => {
           cb.TrackingPeriod = TimeSpan.FromMinutes(1);
           cb.TripThreshold = 15;

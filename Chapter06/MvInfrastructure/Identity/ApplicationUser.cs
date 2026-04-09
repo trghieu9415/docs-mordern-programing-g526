@@ -4,9 +4,8 @@ using Microsoft.AspNetCore.Identity;
 
 namespace MvInfrastructure.Identity;
 
-public class AppUser : IdentityUser<Guid>
+public class ApplicationUser : IdentityUser<Guid>
 {
-    // Custom properties
     [MaxLength(100)]
     public string? FullName { get; set; }
 
@@ -17,7 +16,6 @@ public class AppUser : IdentityUser<Guid>
 
     public DateTime? LastLoginAt { get; set; }
 
-    // Navigation to application domain model
     public User ToUser()
     {
         return new User

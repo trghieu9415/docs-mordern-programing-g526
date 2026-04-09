@@ -24,7 +24,7 @@ public class CurrentUser : ICurrentUser
           ?? throw new UnauthorizedAccessException("Role không tìm thấy");
 
         var role = Enum.Parse<UserRole>(roleStr);
-        var securityStamp = httpContext.User.FindFirstValue("SecurityStamp");
+        var securityStamp = httpContext.User.FindFirstValue(AuthClaimTypes.SecurityStamp);
 
         User = new User
         {

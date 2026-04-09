@@ -5,6 +5,7 @@ using MvApplication.UseCases.Auth.GetProfile;
 using MvApplication.UseCases.Auth.Login;
 using MvApplication.UseCases.Auth.Logout;
 using MvApplication.UseCases.Auth.Refresh;
+using MvApplication.UseCases.Auth.RevokeTokens;
 using MvApplication.UseCases.Auth.Register;
 using MvPresentation.Response;
 
@@ -43,6 +44,14 @@ public class AuthController(IMediator mediator) : ControllerBase
     {
         await mediator.Send(command);
         return AppResponse.Success("Đăng xuất thành công");
+    }
+
+    [HttpPost("revoke")]
+    [Authorize]
+    public async Task<IActionResult> RevokeTokens()
+    {
+        await mediator.Send(new RevokeTokensCommand());
+        return AppResponse.Success("Đã cập nhật SecurityStamp và thu hồi toàn bộ token cũ");
     }
 
     [HttpGet("profile")]

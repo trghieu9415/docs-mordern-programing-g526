@@ -1,8 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MvInfrastructure;
+using MvInfrastructure.Persistence;
+using MvInfrastructure.Seed;
 using MvPresentation.Extensions;
 using MvPresentation.Middlewares;
+using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +16,7 @@ builder.AddSerilogCustom();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // Presentation with JWT Authentication
-builder.Services.AddPresentationInfrastructure();
+builder.Services.AddPresentationInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers()
   .ConfigureApiBehaviorOptions(options =>
@@ -70,6 +73,44 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+  var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+  var migrated = false;
+  Exception? lastException = null;
+
+  for (var attempt = 1; attempt <= 10 && !migrated; attempt++)
+  {
+    try
+    {
+      dbContext.Database.Migrate();
+      migrated = true;
+    }
+    catch (Exception ex) when (attempt < 10)
+    {
+      lastException = ex;
+      await Task.Delay(TimeSpan.FromSeconds(3));
+    }
+    catch (Exception ex)
+    {
+      lastException = ex;
+    }
+  }
+
+  if (!migrated)
+  {
+    throw lastException ?? new InvalidOperationException("Không thể migrate database");
+  }
+}
+
+if (args.Contains("--seed-data", StringComparer.OrdinalIgnoreCase))
+{
+  using var scope = app.Services.CreateScope();
+  await IdentityDataSeeder.SeedAsync(scope.ServiceProvider);
+  Console.WriteLine("Seed data completed.");
+  return;
+}
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

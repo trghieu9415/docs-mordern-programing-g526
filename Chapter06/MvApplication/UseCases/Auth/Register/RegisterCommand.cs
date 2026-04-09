@@ -26,7 +26,7 @@ public class RegisterValidator : AbstractValidator<RegisterCommand>
 
         RuleFor(x => x.Password)
           .NotEmpty().WithMessage("Password là bắt buộc")
-          .MinimumLength(8).WithMessage("Password phải có ít nhất 8 ký tự")
+          .MinimumLength(6).WithMessage("Password phải có ít nhất 6 ký tự")
           .Matches(@"[A-Z]").WithMessage("Password phải có ít nhất 1 chữ hoa")
           .Matches(@"[a-z]").WithMessage("Password phải có ít nhất 1 chữ thường")
           .Matches(@"[0-9]").WithMessage("Password phải có ít nhất 1 số")

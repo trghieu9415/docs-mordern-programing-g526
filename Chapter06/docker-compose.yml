@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: chapter06-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: chapter06_identity
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: "123"
+    ports:
+      - "5432:5432"
+    volumes:
+      - chapter06-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d chapter06_identity"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  chapter06-postgres-data:
